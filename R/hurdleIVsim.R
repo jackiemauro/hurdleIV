@@ -95,10 +95,10 @@ hurdle.IV.sim <- function(formula = F,
 
   if(type == "cragg"){
     if(options$cragg_errors == 1){
-      temp = cragg_errs2(cov=cov,df=df,pi=pi,x1=x1,gamma=gamma,beta=beta,n=n,z=z)
+      temp = cragg_errs2(cov=cov,pi=pi,x1=x1,gamma=gamma,beta=beta,n=n,z=z)
     }
     else{
-      temp = cragg_errs(cov=cov,df=df,pi=pi,x1=x1,gamma=gamma,beta=beta,n=n,z=z)
+      temp = cragg_errs(cov=cov,pi=pi,x1=x1,gamma=gamma,beta=beta,n=n,z=z)
     }
     endog = temp['endog'][[1]]
     errors = temp['errors'][[1]]
@@ -118,7 +118,7 @@ hurdle.IV.sim <- function(formula = F,
 
   out = data.frame(y,y0,endog,df)
 
-  if(silent == F){
+  if(options$silent == F){
     par(mfrow = c(1,2))
     hist(log(out$y), main = "log(y)",xlab = "")
     hist(out$y, main = "y", xlab = "")
