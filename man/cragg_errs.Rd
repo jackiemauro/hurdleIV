@@ -24,8 +24,8 @@ procedure.}
 \item{z}{your instrument (a dataframe)}
 }
 \value{
-returns a list of starting parameters for the coefficients
-and the covariance matrix
+returns a list of your errors and the three generated variables:
+the endogenous regressor, the censoring variable and the outcome variable
 }
 \description{
 The truncated multivariate normal errors can be generated

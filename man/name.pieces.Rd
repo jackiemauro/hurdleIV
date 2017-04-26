@@ -4,10 +4,11 @@
 \alias{name.pieces}
 \title{Name the elements that go into your regression function.}
 \usage{
-name.pieces(t, a1 = len_cov, a2 = num_betas, a3 = num_endog, a4 = a4)
+name.pieces(t, a1 = len_cov, a2 = num_betas, a3 = num_endog,
+  a4 = numpis)
 }
 \arguments{
-\item{t}{a vector which should start with the covariates, then the 
+\item{t}{a vector which should start with the covariates, then the
 betas, then the gammas, then the pis}
 
 \item{a1}{the number of elements in the covariance matrix}
@@ -20,12 +21,12 @@ betas, then the gammas, then the pis}
 for each endogenous regressor}
 }
 \value{
-The vector renamed according to what it needs to be to work in the 
+The vector renamed according to what it needs to be to work in the
 likelihood functions
 }
 \description{
 There is likely
-a cleaner way to do this, but it allows for more flexibility as to 
+a cleaner way to do this, but it allows for more flexibility as to
 how many of each parameter you're going to have.
 }
 
