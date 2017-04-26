@@ -165,12 +165,15 @@ hurdle.IV<-function(formula,
     }
   }
 
-  # start cov values should be cholesky-fied if that option is true
-  cov_start = make.cov(rho=start_val$rho
+  cov_start_err = make.cov(rho=start_val$rho
                        ,tau0=start_val$tau0
                        ,tau1=start_val$tau1
                        ,y_sd=start_val$y_sd
                        ,endog_sd=start_val$endog_sd)
+
+  cov_start = make.covTrans(cov_start_err, num_endog = dim(endog_mat)[2],
+                            gamma = start_val$gamma, beta = start_val$beta,
+                            option = "mat")
   if(options$cholesky == T){
     cov_start = chol(cov_start)
   }
@@ -178,7 +181,7 @@ hurdle.IV<-function(formula,
 
   ########## run optimizer #############
   # save info about parameters and model matrices
-  pars = list(len_cov = length(which(upper.tri(cov_start, diag = T)))-1
+  pars = list(len_cov = length(which(upper.tri(cov_start, diag = T)))
               ,num_endog = dim(endog_mat)[2]
               ,num_betas = dim(y_mat)[2]
             #  ,num_pis = lapply(ER_mat, function(x) dim(x)[2])
@@ -192,7 +195,7 @@ hurdle.IV<-function(formula,
               ,endog_names = endog_names)
   attach(pars)
 
-  cov_in = cov_start[upper.tri(cov_start, diag = T)][-1]
+  cov_in = cov_start[upper.tri(cov_start, diag = T)]
   start_vec = c(cov_in, start_val$beta, start_val$gamma, unlist(start_val$pi))
 
   if(type == "lognormal"){

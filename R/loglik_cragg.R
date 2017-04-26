@@ -27,7 +27,7 @@ loglik_craggiv<-function(t){
   pieces = name.pieces(t)
 
   # reconstitute covariance matrix de-cholesky-ify if you're supposed to
-  Sig_err = reconstitute.cov(vals=pieces$cov_start
+  Sig = reconstitute.cov(vals=pieces$cov_start
                              ,num=num_endog
                              ,chol=myChol)
 
