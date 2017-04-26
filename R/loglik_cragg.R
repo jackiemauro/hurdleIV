@@ -18,7 +18,7 @@
 loglik_craggiv<-function(t){
   ############ preliminaries ##############
   # get everyone named
-  require(mvtnorm)
+  require(mvtnorm, quietly = T)
 
   if(length(t)!=len_cov + 2*num_betas + Reduce("+",numpis)){
     stop("Start vector should be len_cov + 2*num_betas + number of pis")
@@ -36,6 +36,10 @@ loglik_craggiv<-function(t){
   else{noname = F}
   Sig = make.covTrans(Sig_err, num_endog, pieces$gamma, pieces$beta,noname=noname)
   if(all(is.na(Sig))){
+    print("Sigma is not PSD")
+    print(pieces$gamma)
+    print(pieces$beta)
+    print(Sig_err)
     return(-Inf)
   }
 
@@ -77,6 +81,7 @@ loglik_craggiv<-function(t){
   mu_y1y0_x2 = t(cbind(mu_y0,mu_y1)) + Sig[1:2,3:k]%*%solve(sig2_x2)%*%t(endog_mat-mu_x2)
   sig2_y1y0_x2 = Sig[1:2,1:2] - Sig[1:2,3:k]%*%solve(sig2_x2)%*%Sig[3:k,1:2]
   if(any(eigen(sig2_y1y0_x2)$value<0)){return(-Inf)}
+  if(sig2_y0_y1x2<0){return(-Inf)}
 
 
   ############# calculate likelihood #############
@@ -97,7 +102,7 @@ loglik_craggiv<-function(t){
     }, error = function(e){
       print(paste("Error message from pmvnorm: ",e))
       print(sig2_y1y0_x2)
-      return(-Inf)
+      return(Inf)
     }, warning = function(w){
       print(paste("Warning message from pmvnorm: ",w))
     }
@@ -108,7 +113,6 @@ loglik_craggiv<-function(t){
 
 
   #When y1>0:
-  if(sig2_y0_y1x2<0){return(-Inf)}
 
   ll1 = pnorm(0,mean=mu_y0_y1x2, sd=sqrt(sig2_y0_y1x2),log.p=TRUE, lower.tail = FALSE) +
     dnorm(outcome, mean=mu_y1_x2, sd=sqrt(sig2_y1_x2),log = TRUE) -
