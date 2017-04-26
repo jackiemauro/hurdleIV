@@ -118,6 +118,7 @@ loglik_craggiv<-function(t){
   ll = ifelse(censored,ll0,ll1)
 
   #Return the negative log-likelihood
+  print(-sum(ll,na.rm =T))
   -sum(ll, na.rm = T)
 }
 

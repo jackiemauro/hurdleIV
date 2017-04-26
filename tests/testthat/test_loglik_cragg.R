@@ -19,6 +19,7 @@ test_that("makes value", {
 
   expect_error(loglik_craggiv(g[-1]))
 
+  # test that the pmvnorm function does roughly what you want
   muMat = matrix(rep(0,8),ncol=2)
   l = c(-Inf,-Inf); u = c(Inf,1.96)
   f <- function(x){pmvnorm(lower = l, upper = u, mean = x, sigma = diag(2))}

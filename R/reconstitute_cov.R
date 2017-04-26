@@ -1,15 +1,16 @@
 #' Reconstitute a covariance matrix
-#' 
-#' @description This takes a vector and reconstitutes it into the matrix
-#' you want in the end. The first term is always 1 under the assumptions
-#' of the IV hurdle models. If you did a cholesky decomposition it will 
-#' un-do that tranformation for you. 
+#'
+#' @description This takes a vector of upper diagonal terms and
+#' reconstitutes it into the matrix you want in the end. The first
+#'term is always 1 under the assumptions of the IV hurdle models.
+#'If you did a cholesky decomposition it will un-do that tranformation
+#'for you.
 #'
 #' @param vals a vector of covariance matrix elements
 #' @param num the number of endogenous regressors
-#' @param chol True/False. If true, will re-transform to original 
-#' 
-#' @return The vector renamed according to what it needs to be to work in the 
+#' @param chol True/False. If true, will re-transform to original
+#'
+#' @return The vector renamed according to what it needs to be to work in the
 #' likelihood functions
 
 

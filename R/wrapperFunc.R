@@ -37,6 +37,20 @@ hurdle.IV<-function(formula,
                                    , method = "BFGS")
                     ){
 
+  # helper fn
+  rename.input <- function(input){
+    if(class(input)=="name"){
+      name = toString(input)
+    }
+    else if(class(input) == "call"){
+      text = input[-1]
+      k = length(text)
+      name = NULL
+      for(i in 1:k){name[i] = toString(text[[i]])}
+      return(name)
+    }
+  }
+
   ###### format your data, grouping variable types #####
   attach(data)
   inst_mat = as.data.frame(matrix(inst,nrow = dim(data)[1], byrow = F))
@@ -65,29 +79,25 @@ hurdle.IV<-function(formula,
   tryCatch({
     form = as.formula(formula)
   }, error = function(e){
-    print("Error: formula must be a formula, eg: y~x1+x2")
     detach(data)
-    return(NA)
+    stop("Error: formula must be a formula, eg: y~x1+x2")
   }
   )
   # check the formula includes endogenous variables
   if(dim(y_endog)[2]==0){
-    print("Error: endogenous variables must be included in main regression")
     detach(data)
-    return(NA)
+    stop("Error: endogenous variables must be included in main regression")
   }
 
   # check no more endogenous variables than instruments
   if(length(inst)<length(endog)){
-    print("Error: More endogenous variables than instruments")
     detach(data)
-    return(NA)
+    stop("Error: More endogenous variables than instruments")
   }
 
   # if not specified, replace endog_reg with formula that has all exog's, all inst's
   if(!is.list(endog_reg)){
-    print("Error: endog_reg must be a list (can be empty)")
-    stop
+    stop("Error: endog_reg must be a list (can be empty)")
   }
 
 
@@ -102,9 +112,8 @@ hurdle.IV<-function(formula,
   }
   else{
     if(length(endog_reg)!=dim(endog_mat)[2]){
-      print("Error: Need one regression for each endogenous variable")
       detach(data)
-      return(NA)
+      stop("Error: Need one regression for each endogenous variable")
     }
   }
 
@@ -130,20 +139,17 @@ hurdle.IV<-function(formula,
 
   else{
     if(class(start_val) != "list"){
-      print("Error: start values must be a list")
       detach(mf)
-      return(NA)
+      stop("Error: start values must be a list")
     }
     if(length(start_val[['beta']])!=length(start_val[['gamma']])){
-      print("Error: beta and gamma must be equal length vectors")
       detach(mf)
-      return(NA)
+      stop("Error: beta and gamma must be equal length vectors")
     }
     k = dim(endog_mat)[2]
     if(length(start_val$pi)!=k | length(start_val$tau0)!= k | length(start_val$tau1)!=k){
-      print("Error: tau0, tau1 and number of pi coordinates must equal number of endogenous variables")
       detach(mf)
-      return(NA)
+      stop("Error: tau0, tau1 and number of pi coordinates must equal number of endogenous variables")
     }
     if(is.null(names(start_val$gammas))){
       names(start_val$gamma)<-c("Intercept", exog_names, endog_names)
@@ -219,19 +225,5 @@ hurdle.IV<-function(formula,
               ,sd = sds))
 }
 
-rename.input <- function(input){
-  if(class(input)=="name"){
-    name = toString(input)
-  }
-  else if(class(input) == "call"){
-    text = input[-1]
-    k = length(text)
-    name = NULL
-    for(i in 1:k){name[i] = toString(text[[i]])}
-    return(name)
-  }
-}
 
-
-cant.solve <- function(m) class(try(solve(m),silent=T))!="matrix"
 
