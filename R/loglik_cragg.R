@@ -17,13 +17,14 @@
 
 loglik_craggiv<-function(t){
   ############ preliminaries ##############
-  # get everyone named
-  require(mvtnorm, quietly = T)
 
+  print("new round")
+  require(mvtnorm, quietly = T)
   if(length(t)!=len_cov + 2*num_betas + Reduce("+",numpis)){
     stop("Start vector should be len_cov + 2*num_betas + number of pis")
   }
 
+  # get everyone named
   pieces = name.pieces(t)
 
   # reconstitute covariance matrix de-cholesky-ify if you're supposed to
@@ -31,28 +32,29 @@ loglik_craggiv<-function(t){
                              ,num=num_endog
                              ,chol=myChol)
 
+  if(!all(Sig_err == t(Sig_err))){print("Sig_err not symmetric")}
+
   # transform covariance matrix with betas and gammas
   if(is.null(names(pieces$gamma))){noname = T}
   else{noname = F}
+
   Sig = make.covTrans(Sig_err, num_endog, pieces$gamma, pieces$beta,noname=noname)
-  if(all(is.na(Sig))){
-    print("Sigma is not PSD")
-    print(pieces$gamma)
-    print(pieces$beta)
-    print(Sig_err)
-    return(-Inf)
-  }
+#   if(min(eigen(Sig)$value)<0){
+#     print("In ll function, Sigma is not PSD")
+#     print(pieces$gamma)
+#     print(pieces$beta)
+#     print(Sig_err)
+#     print(Sig)
+#     return(-Inf)
+#   }
 
   ################ get means ######################
   # get censored values
   censored = outcome<=0
 
-  # get unconditional means of x2'sm
+  # get unconditional means of x2's
   n = length(pieces$pi)
-  mu_x2 = matrix(c(rep(NA,n*length(outcome))),ncol = n)
-  for(i in 1:n){
-    mu_x2[,i]= ER_mat[[i]]%*%pieces$pi[[i]]
-  }
+  mu_x2 = matrix(unlist(Map('%*%',ER_mat,pieces$pi)),ncol=n)
 
   # get unconditional means of y's
   mu_y0 = y_mat%*%pieces$gamma
@@ -80,8 +82,8 @@ loglik_craggiv<-function(t){
   #Parameters for y0star and y1star given x2
   mu_y1y0_x2 = t(cbind(mu_y0,mu_y1)) + Sig[1:2,3:k]%*%solve(sig2_x2)%*%t(endog_mat-mu_x2)
   sig2_y1y0_x2 = Sig[1:2,1:2] - Sig[1:2,3:k]%*%solve(sig2_x2)%*%Sig[3:k,1:2]
+  sig2_y1y0_x2[upper.tri(sig2_y1y0_x2)] <- sig2_y1y0_x2[lower.tri(sig2_y1y0_x2)]
   if(any(eigen(sig2_y1y0_x2)$value<0)){return(-Inf)}
-  if(sig2_y0_y1x2<0){return(-Inf)}
 
 
   ############# calculate likelihood #############
@@ -113,7 +115,6 @@ loglik_craggiv<-function(t){
 
 
   #When y1>0:
-
   ll1 = pnorm(0,mean=mu_y0_y1x2, sd=sqrt(sig2_y0_y1x2),log.p=TRUE, lower.tail = FALSE) +
     dnorm(outcome, mean=mu_y1_x2, sd=sqrt(sig2_y1_x2),log = TRUE) -
     C + x2part
@@ -122,7 +123,8 @@ loglik_craggiv<-function(t){
   ll = ifelse(censored,ll0,ll1)
 
   #Return the negative log-likelihood
-  print(-sum(ll,na.rm =T))
+  print(paste("likelihood: ",-sum(ll,na.rm =T)))
+  print(paste("llo_int:", sum(ll0_int,na.rm = T)))
   -sum(ll, na.rm = T)
 }
 

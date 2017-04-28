@@ -1,10 +1,10 @@
 #' Make a proper covariance matrix
-#' 
+#'
 #' @description In these regressions, we need to transform the covariance
-#' matrix using the coefficients in our regressions. This function produces that 
+#' matrix using the coefficients in our regressions. This function produces that
 #' covariance matrix.
 #'
-#' @param a can be a matrix or vector of what should be included in 
+#' @param a can be a matrix or vector of what should be included in
 #' the covariance matrix
 #' @param num_endog the number of endogenous regressors
 #' @param gamma a vector of your second stage probit regression parameters
@@ -13,7 +13,7 @@
 #' elements of the matrix but in vector form or "parameters" in which case
 #' a should be a list of the important parameters:
 #' a = list(rho,tau0,tau1,y_sd,endog_sd)
-#' 
+#'
 #' @return returns the covariance matrix
 
 
@@ -21,10 +21,10 @@ make.covTrans <- function(a,num_endog,gamma,beta,option = "mat",noname = F){
   #option "parameters": a = list(rho,tau0,tau1,y_sd,endog_sd)
   #option "mat": a is full matrix
   #option "vector": a is vector of all elements of matrix
-  
+
   if(option == "mat"){
     if(is.matrix(a)){
-      Sig_err = a
+      Sig_err = matrix(as.double(a),ncol=dim(a)[2])
     }
     else{
       cat("Error: You have set option to 'mat', please supply a matrix\n
@@ -34,7 +34,7 @@ make.covTrans <- function(a,num_endog,gamma,beta,option = "mat",noname = F){
       return(NA)
     }
   }
-  
+
   else if(option=="vector"){
     tryCatch({
       Sig_err = matrix(a, ncol = 2+num_endog, byrow = F)
@@ -54,9 +54,9 @@ make.covTrans <- function(a,num_endog,gamma,beta,option = "mat",noname = F){
       return(NA)
     }
       )
-    
+
     }
-  
+
   else if(option == "parameters"){
     tryCatch({
       mat1 = matrix(c(1,a$rho,a$rho,a$y_sd^2),ncol = 2, byrow = T)
@@ -82,10 +82,10 @@ make.covTrans <- function(a,num_endog,gamma,beta,option = "mat",noname = F){
     }
       )
     }
-  
-  
+
+
   A = diag(2+num_endog)
-  
+
   if(noname == T){
     gam2 = tail(gamma,num_endog)
     bet2 = tail(beta,num_endog)
@@ -94,16 +94,42 @@ make.covTrans <- function(a,num_endog,gamma,beta,option = "mat",noname = F){
     gam2 = gamma[names(gamma) %in% endog_names]
     bet2 = beta[names(beta) %in% endog_names]
   }
-  
+
   A[1,3:(2+num_endog)] <- gam2
   A[2,3:(2+num_endog)] <- bet2
-  
+  A = matrix(as.double(A),ncol = dim(A)[2])
+
   Sig = A%*%Sig_err%*%t(A)
-  
-  if(min(eigen(Sig)$values)<=0){
-    print("bad start sigma values")
-    return(NA)
+  Sig = t(chol(Sig))%*%chol(Sig)
+#   Sig = matrix(as.double(Sig),ncol = dim(Sig)[2])
+#   Sig[upper.tri(Sig)]<-Sig[lower.tri(Sig)]
+
+  if(!all(Sig_err==t(Sig_err)) ){
+    print("In covariance transform function, Sig_err not symmetric")
+    print(Sig_err)
   }
-  
+
+  if(min(eigen(Sig_err)$values)<0){
+    print("In covariance transform function, Sig_err not PSD")
+    print(Sig_err)
+    print(min(eigen(Sig_err)$values))
+  }
+
+  if(min(eigen(Sig)$values)<0){
+    print("In covariance transform function, A * Sigma * AT not PSD")
+#     print(Sig)
+#     print(Sig_err)
+#     print(A)
+#     print(min(eigen(Sig)$values))
+  }
+
+  if(!all(Sig==t(Sig)) ){
+    print("In covariance transform function, A * Sigma * AT not symmetric")
+    print(Sig)
+    print(Sig_err)
+    print(A)
+    print(A%*%Sig_err%*%t(A))
+  }
+
   return(Sig)
   }
