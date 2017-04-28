@@ -1,3 +1,4 @@
+
 #' Hurdle IV regression
 #'
 #' @description Run a hurdle IV regression, either lognormal IV or cragg IV.
@@ -171,9 +172,12 @@ hurdle.IV<-function(formula,
                        ,y_sd=start_val$y_sd
                        ,endog_sd=start_val$endog_sd)
 
+  if(is.null(names(start_val$gamma))){noname = T}
+  else{noname = F}
+
   cov_start = make.covTrans(cov_start_err, num_endog = dim(endog_mat)[2],
                             gamma = start_val$gamma, beta = start_val$beta,
-                            option = "mat")
+                            option = "mat",noname = T)
   if(options$cholesky == T){
     cov_start = chol(cov_start)
   }

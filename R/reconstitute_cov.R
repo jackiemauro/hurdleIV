@@ -17,20 +17,20 @@
 reconstitute.cov<-function(vals,num,chol=myChol){
   # de-cholesky-ify if you're supposed to
   if(chol == T){
-    cov_vals = c(1,vals)
+    cov_vals = c(vals)
     empty = diag(2+num)
     empty[upper.tri(empty,diag = T)]<-cov_vals
-    Sig_err = t(empty)%*%empty
-    Sig_err = Sig_err/Sig_err[1,1]
+    Sig = t(empty)%*%empty
+    Sig = Sig/Sig[1,1]
   }
   else{
     print("Warning: no cholesky decomposition makes maximization less stable")
-    cov_vals = c(1,vals)
+    cov_vals = c(vals)
     empty = diag(2+num)
     empty[upper.tri(empty,diag = T)]<-cov_vals
     tempty = t(empty)
     tempty[upper.tri(tempty,diag = T)]<-cov_vals
-    Sig_err = tempty
+    Sig = tempty
   }
-  return(Sig_err)
+  return(Sig)
 }

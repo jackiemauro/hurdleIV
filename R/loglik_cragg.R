@@ -31,13 +31,7 @@ loglik_craggiv<-function(t){
                              ,num=num_endog
                              ,chol=myChol)
 
-  # transform covariance matrix with betas and gammas
-  if(is.null(names(pieces$gamma))){noname = T}
-  else{noname = F}
-  Sig = make.covTrans(Sig_err, num_endog, pieces$gamma, pieces$beta,noname=noname)
-  if(all(is.na(Sig))){
-    return(-Inf)
-  }
+  print(paste("min eigenvalue for Sig: ", min(eigen(Sig)$value)))
 
   ################ get means ######################
   # get censored values
@@ -118,7 +112,7 @@ loglik_craggiv<-function(t){
   ll = ifelse(censored,ll0,ll1)
 
   #Return the negative log-likelihood
-  print(-sum(ll,na.rm =T))
+  print(paste("likelihood:",-sum(ll,na.rm =T)))
   -sum(ll, na.rm = T)
 }
 
