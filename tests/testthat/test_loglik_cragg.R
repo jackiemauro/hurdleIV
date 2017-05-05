@@ -17,6 +17,14 @@ test_that("makes value", {
 
   expect_that(loglik_craggiv(g),is_a("numeric"))
 
+  # start at truth
+  g = c(.2,3,.1,.4,9,.05,.06,.02,-.2,.8,.07,1,-1,3)
+  options(error = recover)
+  optim(g
+        , loglik_craggiv
+        , hessian  = T
+        , control = list(maxit = 5000))
+
   expect_error(loglik_craggiv(g[-1]))
 
   # test that the pmvnorm function does roughly what you want

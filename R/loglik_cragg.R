@@ -39,14 +39,15 @@ loglik_craggiv<-function(t){
   else{noname = F}
 
   Sig = make.covTrans(Sig_err, num_endog, pieces$gamma, pieces$beta,noname=noname)
-#   if(min(eigen(Sig)$value)<0){
-#     print("In ll function, Sigma is not PSD")
-#     print(pieces$gamma)
-#     print(pieces$beta)
-#     print(Sig_err)
-#     print(Sig)
-#     return(-Inf)
-#   }
+
+  options(error = recover)
+  tryCatch({
+    sqrt(min(eigen(Sig)$value))
+    },warning = function(w){
+      print(paste("Sqrt warning: ",w))
+      browser()
+    }
+  )
 
   ################ get means ######################
   # get censored values
@@ -93,8 +94,10 @@ loglik_craggiv<-function(t){
     x2part = x2part + temp
   }
 
-  #probability y1>0
-  C = pnorm(0,mean = mu_y1_x2, sd = sqrt(sig2_y1_x2),log.p = T, lower.tail = FALSE)
+  #probability y1>0 | x2
+  #C = pnorm(0,mean = mu_y1_x2, sd = sqrt(sig2_y1_x2),log.p = T, lower.tail = FALSE)
+  # should this just be P(y1>0)?
+  C = pnorm(0, mean = mu_y1, sd = sqrt(Sig[2,2]), log.p = T, lower.tail = F)
 
   #ll0 integral
   l = c(0,-Inf); u = c(Inf,0)
@@ -113,7 +116,6 @@ loglik_craggiv<-function(t){
   #When y1=0:
   ll0 = x2part - C + ll0_int
 
-
   #When y1>0:
   ll1 = pnorm(0,mean=mu_y0_y1x2, sd=sqrt(sig2_y0_y1x2),log.p=TRUE, lower.tail = FALSE) +
     dnorm(outcome, mean=mu_y1_x2, sd=sqrt(sig2_y1_x2),log = TRUE) -
@@ -123,8 +125,8 @@ loglik_craggiv<-function(t){
   ll = ifelse(censored,ll0,ll1)
 
   #Return the negative log-likelihood
+  print(paste("min eigen:",min(eigen(Sig)$value)))
   print(paste("likelihood: ",-sum(ll,na.rm =T)))
-  print(paste("llo_int:", sum(ll0_int,na.rm = T)))
   -sum(ll, na.rm = T)
 }
 
