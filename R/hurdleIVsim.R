@@ -35,7 +35,8 @@
 #' @param n the number of observations. Defaults to 10,000.
 #' @param type defaults to lognormal. Enter "cragg" for cragg model.
 #' @param options Options are: silent = F (will print histograms and percent censored),
-#' cragg_errors = {1,2} cragg error type 1 resamples entire vector of errors.
+#' cragg_errors = {1,2,3} cragg error type 3 resamples entire vector of errors after
+#' censoring according to y0.
 #' See documentation for cragg_errs for more detail.
 #'
 #' @return returns a simulated dataset
@@ -55,7 +56,7 @@ hurdle.IV.sim <- function(formula = F,
                                    tau0 = .3,
                                    tau1 = .1,
                                    n = 10000,
-                                   options = list(silent = F, cragg_errors = 1),
+                                   options = list(silent = F, cragg_errors = 3),
                                    type = "lognormal"){
 
   #checks
@@ -95,10 +96,13 @@ hurdle.IV.sim <- function(formula = F,
 
   if(type == "cragg"){
     if(options$cragg_errors == 1){
+      temp = cragg_errs1(cov=cov,pi=pi,x1=x1,gamma=gamma,beta=beta,n=n,z=z)
+    }
+    else if(options$cragg_errors == 2){
       temp = cragg_errs2(cov=cov,pi=pi,x1=x1,gamma=gamma,beta=beta,n=n,z=z)
     }
     else{
-      temp = cragg_errs(cov=cov,pi=pi,x1=x1,gamma=gamma,beta=beta,n=n,z=z)
+      temp = cragg_errs3(cov=cov,pi=pi,x1=x1,gamma=gamma,beta=beta,n=n,z=z)
     }
     endog = temp['endog'][[1]]
     errors = temp['errors'][[1]]

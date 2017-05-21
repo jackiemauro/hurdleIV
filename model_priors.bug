@@ -1,0 +1,51 @@
+model {
+  # setting up priors
+  beta11 ~ dnorm(0, .0001)
+  beta12 ~ dnorm(0, .0001)
+  beta21 ~ dnorm(0, .0001)
+
+  gamma11 ~ dnorm(0, .0001)
+  gamma12 ~ dnorm(0, .0001)
+  gamma21 ~ dnorm(0, .0001)
+
+  pi11 ~ dnorm(0, .0001)
+  pi12 ~ dnorm(0, .0001)
+  pi21 ~ dnorm(0, .0001)
+
+  rho ~ dunif(0, 100)
+  sigu ~ dunif(0, 100)
+  sigv ~ dunif(0, 100)
+  t0 ~ dunif(0, 100)
+  t1 ~ dunif(0, 100)
+
+  Sig_err <- matrix(c(1,rho^(-2),t0^(-2)
+                 , rho^(-2),sigu^(-2),t1^(-2)
+                 , t0^(-2),t1^(-2),sigv^(-2))
+               ,ncol = 3, byrow = T)
+
+  A <- matrix(c(1,0,gamma21,0,1,beta21,0,0,1),ncol = 3, byrow = T)
+
+  Sig <- A%*%Sig_err%*%A^T
+
+  for (i in 1:N) {
+    l[i] ~ dmvnorm(mu[i],Sig)
+    mu[i] = c(gamma11*x11[i]+gamma12*x12[i]+gamma21*x21[i]
+               ,beta11*x11[i]+beta12*x12[i]+beta21*x21[i]
+               ,pi11*x11[i]+pi12*x12[i]+pi21*z1[i])
+
+    if( l[i][1]<=0 ){ y[i] <- 0 }
+    else if( l[i][2]>0 ) { y[i] <- l[i][2] }
+    else{
+      y[i] = -1
+      while(y[i]<0){
+        l[i] ~ dmvnorm(mu[i],Sig)
+        mu[i] = c(gamma11*x11[i]+gamma12*x12[i]+gamma21*x21[i]
+                   ,beta11*x11[i]+beta12*x12[i]+beta21*x21[i]
+                   ,pi11*x11[i]+pi12*x12[i]+pi21*z1[i])
+
+        if( (l[i][1]>0) & (l[i][2]>0) ){
+          y[i] <- l[i][2]
+        }
+      }
+    }
+}

@@ -4,8 +4,10 @@
 #' parameters to be attached/in the environment. Can't figure out how to
 #' just pass them to the function without the function later trying to
 #' optimize for them. This should essentially always be used in a wrapper
-#' for that reason. Note that this uses the first method of truncation for
-#' the errors, described in cragg_errs.
+#' for that reason. Note that this uses the third method of truncation for
+#' the errors, described in cragg_errs. This is following the method
+#' worked out with Alex Chouldechova. See "progress report" for more
+#' details.
 #'
 #' @param t a vector of parameters to be maximized. Order should be:
 #' covariance matrix elements (leaving out leading 1), then betas, then
@@ -14,7 +16,7 @@
 #' @return returns the loglikelihood of the given parameter vector for the
 #' dataset.
 
-
+# how do i get y1|y0 when i don't observe y0?
 loglik_craggiv<-function(t){
   ############ preliminaries ##############
 
@@ -71,14 +73,10 @@ loglik_craggiv<-function(t){
   mu_y0_x2 = mu_y0 + t(Sig[1,(k+1-j):k]%*%solve(sig2_x2)%*%t(endog_mat-mu_x2))
   sig2_y0_x2 = Sig[1,1] - Sig[1,(k+1-j):k]%*%solve(sig2_x2)%*%Sig[(k+1-j):k,1]
 
-  #Parameters for y1star given x2
-  mu_y1_x2 = mu_y1 + t(Sig[2,(k+1-j):k]%*%solve(sig2_x2)%*%t(endog_mat-mu_x2))
-  sig2_y1_x2 = Sig[2,2] - Sig[2,(k+1-j):k]%*%solve(sig2_x2)%*%Sig[(k+1-j):k,2]
-
-  #Parameters for y0star given y1star and x2
+  #Parameters for y1star given y0star and x2
   if(cant.solve(Sig[2:k,2:k])){return(-Inf)}
-  mu_y0_y1x2 = mu_y0 + t(Sig[1,2:k,drop=FALSE]%*%solve(Sig[2:k,2:k])%*%t(cbind(outcome-mu_y1,endog_mat-mu_x2)))
-  sig2_y0_y1x2 = Sig[1,1] - Sig[1,2:k,drop=FALSE]%*%solve(Sig[2:k,2:k])%*%Sig[2:k,1,drop=FALSE]
+  mu_y1_y0x2 = mu_y1 + t(Sig[1,2:k,drop=FALSE]%*%solve(Sig[2:k,2:k])%*%t(cbind(outcome-mu_y1,endog_mat-mu_x2)))
+  sig2_y1_y0x2 = Sig[1,1] - Sig[1,2:k,drop=FALSE]%*%solve(Sig[2:k,2:k])%*%Sig[2:k,1,drop=FALSE]
 
   #Parameters for y0star and y1star given x2
   mu_y1y0_x2 = t(cbind(mu_y0,mu_y1)) + Sig[1:2,3:k]%*%solve(sig2_x2)%*%t(endog_mat-mu_x2)
@@ -94,11 +92,6 @@ loglik_craggiv<-function(t){
     x2part = x2part + temp
   }
 
-  #probability y1>0 | x2
-  #C = pnorm(0,mean = mu_y1_x2, sd = sqrt(sig2_y1_x2),log.p = T, lower.tail = FALSE)
-  # should this just be P(y1>0)?
-  C = pnorm(0, mean = mu_y1, sd = sqrt(Sig[2,2]), log.p = T, lower.tail = F)
-
   #ll0 integral
   l = c(0,-Inf); u = c(Inf,0)
   f <- function(x){pmvnorm(lower = l, upper = u, mean = x, sigma = sig2_y1y0_x2)}
@@ -113,13 +106,26 @@ loglik_craggiv<-function(t){
     }
     )
 
+  #ll1 integral -- not happy with this. don't think it knows to int over y0
+  l = c(0,0); u = c(Inf,Inf)
+  f <- function(x){pmvnorm(lower = l, upper = u, mean = x, sigma = sig2_y1_y0x2)}
+  ll0_int <- tryCatch({
+    apply(mu_y1_y0x2,2,f)
+  }, error = function(e){
+    print(paste("Error message from pmvnorm: ",e))
+    print(sig2_y1_y0x2)
+    return(Inf)
+  }, warning = function(w){
+    print(paste("Warning message from pmvnorm: ",w))
+  }
+  )
+
   #When y1=0:
-  ll0 = x2part - C + ll0_int
+  ll0 = pnorm(0,mean = mu_y0_x2, sd=sqrt(sig2_y0_y1x2),log.p = T) + x2part
 
   #When y1>0:
-  ll1 = pnorm(0,mean=mu_y0_y1x2, sd=sqrt(sig2_y0_y1x2),log.p=TRUE, lower.tail = FALSE) +
-    dnorm(outcome, mean=mu_y1_x2, sd=sqrt(sig2_y1_x2),log = TRUE) -
-    C + x2part
+  ll1 = dnorm(outcome, mean=mu_y1_y0x2, sd=sqrt(sig2_y1_y0x2),log = TRUE) -
+
 
   #Combine them, based on y1
   ll = ifelse(censored,ll0,ll1)

@@ -1,12 +1,11 @@
-#' Resample for truncated normal errors
+#' Resample only linear errors for truncated normal errors
 #'
 #' @description The truncated multivariate normal errors can be generated
 #' in one of two ways. Either we sample the first stage and probit errors
 #' first and then resample the linear regression's errors until we have
 #' positive values, or we resample the vector of all three errors until
-#' the linear value is positive. This is the second method, use cragg_errs2
-#' for the second, which is less intuitive.
-#'
+#' the linear value is positive. This is the first method, use cragg_errors2
+#' for the second, which is more intuitive.
 #'
 #' @param cov the covariance matrix. This should be untransformed, the
 #' terms will be multiplied by the coefficients within the resampling
@@ -21,31 +20,34 @@
 #' @return returns a list of your errors and the three generated variables:
 #' the endogenous regressor, the censoring variable and the outcome variable
 #'
-cragg_errs<-function(cov,pi,x1,gamma,beta,n,z){
+
+cragg_errs1<-function(cov,pi,x1,gamma,beta,n,z){
+
   require("MASS")
+  newcov = matrix(c(cov[1,1],cov[1,3],cov[1,3],cov[3,3]), ncol = 2, byrow = T)
+  err1 = mvrnorm(n,rep(0,2),newcov)
+  frame = as.matrix(cbind(1,x1,z))
+  endog = frame%*%pi + err1[,2]
+  frame2 = as.matrix(cbind(1,x1,endog))
+  y0 = as.numeric(frame2%*%gamma + err1[,1] > 0)
+
+  # get conditional mean and variance
+  mu = c(cov[1,2], cov[2,3])%*%solve(newcov)%*%t(err1)
+  sig2 = cov[2,2] - c(cov[1,2], cov[2,3])%*%solve(newcov)%*%c(cov[2,3], cov[1,2])
+
   j=1
-  endog = c(rep(NA,n))
-  y0 = c(rep(NA,n))
   yStar = c(rep(NA,n))
-  errors = matrix(c(rep(0,n*dim(cov)[1])),ncol = dim(cov)[1])
+  err2 = c(rep(NA,n))
 
   while(j<=n){
-    err = mvrnorm(1,rep(0,dim(cov)[1]),cov)
-    frame = as.matrix(cbind(1,x1[j,],z[j,]))
-    endog[j] = frame%*%pi + err[3]
-    frame2 = as.matrix(cbind(1,x1[j,],endog[j]))
-    y0[j] = as.numeric(frame2%*%gamma + err[1] > 0)
-    yStar[j] = frame2%*%beta + err[2]
-
+    err = rnorm(1,mu,sqrt(sig2))
+    yStar[j] = frame2[j,]%*%beta + err
     if(yStar[j]>0){
-      errors[j,] = err
+      err2[j] = err
       j = j+1
     }
 
   }
-
+  errors = cbind(err1,err2)
   return(list(errors = errors, endog = endog, y0 = y0, yStar = yStar))
 }
-
-
-
