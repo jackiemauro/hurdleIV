@@ -1,8 +1,9 @@
 ### This function returns the negative log-likelihood (so that it can be minimized)
-### The math follows Dave Choi's derivation for dChoi cragg errors, but I don't
-### think the last bit of the ll is right. We are working on it.
+### The math follows Amelia Haviland's derivation.
+### There is some question in my mind of whether the last to terms in the likelihood
+### should be conditional on x2. Changing it doesn't fix anything though.
 
-loglik_dChoi = function(params){
+loglik_AH = function(params){
   sig_v = params[1]
   sig_u = params[2]
   tau1 = params[3]
@@ -27,9 +28,9 @@ loglik_dChoi = function(params){
   #                  ncol = 3, byrow = T)
 
   pre = matrix( c(1, rho,    tau0,
-                     0,     sig_u^2,    tau1,
-                     0,  0, sig_v^2),
-                   ncol = 3, byrow = T)
+                  0,     sig_u^2,    tau1,
+                  0,  0, sig_v^2),
+                ncol = 3, byrow = T)
   Sig_err = t(pre)%*%pre / ((t(pre)%*%pre)[1,1])
   if(min(eigen(Sig_err)$values)<=0){return(Inf)}
   if((sig_u<=0)|(sig_v<=0)){return(Inf)}
@@ -71,29 +72,16 @@ loglik_dChoi = function(params){
   if(any(eigen(sig2_y1y0_x2)$value<0)){return(-Inf)}
 
   ###Calculate the contributions to the log likelihood.
-
-  # get P(x2',y1') where eps' ~ P(eps'|y0>0,y1>0)
-  require(mvtnorm)
-  l = c(0,-Inf); u = c(Inf,0) #DChoi's way
-  #l = c(0,0); u = c(Inf,Inf) #makes more sense to me
-  f <- function(x){pmvnorm(lower = l, upper = u, mean = x, sigma = sig2_y1y0_x2)}
-  ll1_int <- tryCatch({
-    apply(mu_y1y0_x2,2,f)
-  }, error = function(e){
-    print(paste("Error message from pmvnorm: ",e))
-    print(sig2_y1y0_x2)
-    return(Inf)
-  }, warning = function(w){
-    print(paste("Warning message from pmvnorm: ",w))
-  }
-  )
-
   #When y1=0:
   ll0 = pnorm(0,mean=mu_y0_x2,sd=sqrt(sig2_y0_x2),log.p = TRUE) + dnorm(x2,mean=mu_x2,sd=sqrt(sig2_x2),log = TRUE)
 
-  #when y1>0
-  ll1 = pnorm(0,mean=mu_y0_x2,sd=sqrt(sig2_y0_x2),log.p = TRUE,lower.tail = FALSE)+
-    ll1_int
+  #When y1>0:
+  ll1 = pnorm(0,mean = mu_y0_y1x2, sd = sqrt(sig2_y0_y1x2),log.p=T,lower.tail = F)
+    +dnorm(y1,mean=mu_y1_x2,sd = sqrt(sig2_y1_x2),log = T)
+    +dnorm(x2,mean=mu_x2,sd=sqrt(sig2_x2),log = TRUE)
+    -pnorm(0,mean=mu_y1_x2,sd=sqrt(sig2_y1_x2),log.p = T, lower.tail = F)
+    -pnorm(0,mean=mu_y0_x2,sd=sqrt(sig2_y0_x2),log.p = T, lower.tail = F)
+
 
   #Combine them, based on y1
   ll = ifelse(censored,ll0,ll1)

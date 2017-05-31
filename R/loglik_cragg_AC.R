@@ -1,8 +1,9 @@
 ### This function returns the negative log-likelihood (so that it can be minimized)
-### The math follows Dave Choi's derivation for dChoi cragg errors, but I don't
-### think the last bit of the ll is right. We are working on it.
+### The math follows Alex C's derivation.
+### Not done--don't understand how to get the integral. y0 is in the conditioning
+### statement, so I can't figure out how to tell R to integrate over it.
 
-loglik_dChoi = function(params){
+loglik_AC = function(params){
   sig_v = params[1]
   sig_u = params[2]
   tau1 = params[3]
@@ -27,9 +28,9 @@ loglik_dChoi = function(params){
   #                  ncol = 3, byrow = T)
 
   pre = matrix( c(1, rho,    tau0,
-                     0,     sig_u^2,    tau1,
-                     0,  0, sig_v^2),
-                   ncol = 3, byrow = T)
+                  0,     sig_u^2,    tau1,
+                  0,  0, sig_v^2),
+                ncol = 3, byrow = T)
   Sig_err = t(pre)%*%pre / ((t(pre)%*%pre)[1,1])
   if(min(eigen(Sig_err)$values)<=0){return(Inf)}
   if((sig_u<=0)|(sig_v<=0)){return(Inf)}
@@ -61,8 +62,13 @@ loglik_dChoi = function(params){
   sig2_y1_x2 = Sig[2,2] - Sig[2,3]^2/Sig[3,3]
 
   #Parameters for y0star given y1star and x2
-  mu_y0_y1x2 = mu_y0 + Sig[1,2:3,drop=FALSE]%*%solve(Sig[2:3,2:3])%*%rbind(y1-mu_y1,x2-mu_x2)
-  sig2_y0_y1x2 = Sig[1,1] - Sig[1,2:3,drop=FALSE]%*%solve(Sig[2:3,2:3])%*%Sig[2:3,1,drop=FALSE]
+  tempSig = Sig[-2,-2]
+  mu_y0_y1x2 = mu_y0 + Sig[2,c(1,3),drop=FALSE]%*%solve(tempSig)%*%rbind(y0-mu_y0,x2-mu_x2)
+  sig2_y0_y1x2 = Sig[2,2] - Sig[2,c(1,3),drop=FALSE]%*%solve(tempSig)%*%Sig[c(1,3),2,drop=FALSE]
+
+  #Parameters for y1star given y0star and x2
+  mu_y1_y0x2 = mu_y1 + Sig[1,2:3,drop=FALSE]%*%solve(Sig[2:3,2:3])%*%rbind(y1-mu_y1,x2-mu_x2)
+  sig2_y1_y0x2 = Sig[1,1] - Sig[1,2:3,drop=FALSE]%*%solve(Sig[2:3,2:3])%*%Sig[2:3,1,drop=FALSE]
 
   #Parameters for y0star and y1star given x2
   mu_y1y0_x2 = t(cbind(mu_y0,mu_y1)) + Sig[1:2,3]%*%solve(sig2_x2)%*%t(x2-mu_x2)
@@ -70,30 +76,28 @@ loglik_dChoi = function(params){
   sig2_y1y0_x2[upper.tri(sig2_y1y0_x2)] <- sig2_y1y0_x2[lower.tri(sig2_y1y0_x2)]
   if(any(eigen(sig2_y1y0_x2)$value<0)){return(-Inf)}
 
-  ###Calculate the contributions to the log likelihood.
-
-  # get P(x2',y1') where eps' ~ P(eps'|y0>0,y1>0)
-  require(mvtnorm)
-  l = c(0,-Inf); u = c(Inf,0) #DChoi's way
-  #l = c(0,0); u = c(Inf,Inf) #makes more sense to me
-  f <- function(x){pmvnorm(lower = l, upper = u, mean = x, sigma = sig2_y1y0_x2)}
-  ll1_int <- tryCatch({
-    apply(mu_y1y0_x2,2,f)
+  #ll1 integral -- don't know how to get integral over y0 in conditioning
+  # don't know how to divide by it either within the integral
+  l = c(0,0); u = c(Inf,Inf)
+  f <- function(x){pmvnorm(lower = l, upper = u, mean = x, sigma = sig2_y1_y0x2)}
+  ll0_int <- tryCatch({
+    apply(mu_y1_y0x2,2,f)
   }, error = function(e){
     print(paste("Error message from pmvnorm: ",e))
-    print(sig2_y1y0_x2)
+    print(sig2_y1_y0x2)
     return(Inf)
   }, warning = function(w){
     print(paste("Warning message from pmvnorm: ",w))
   }
   )
 
+  ###Calculate the contributions to the log likelihood.
   #When y1=0:
   ll0 = pnorm(0,mean=mu_y0_x2,sd=sqrt(sig2_y0_x2),log.p = TRUE) + dnorm(x2,mean=mu_x2,sd=sqrt(sig2_x2),log = TRUE)
 
-  #when y1>0
-  ll1 = pnorm(0,mean=mu_y0_x2,sd=sqrt(sig2_y0_x2),log.p = TRUE,lower.tail = FALSE)+
-    ll1_int
+  #When y1>0:
+  ll1 = dnorm(y1,mean = mu_y1_y0x2,sd=sqrt(sig2_y1_y0x2),log=T)-ll1_int
+
 
   #Combine them, based on y1
   ll = ifelse(censored,ll0,ll1)

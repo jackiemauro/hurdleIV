@@ -2,6 +2,10 @@
 # n: the number of samples
 # cut: the value at which you censor the outcome
 
+# this file generates a simplified version of the truncation
+# you can think of it as a system with flipping coins and rolling dice
+# isn't used for anything but checking intuition.
+
 dummy_sim <- function(n,k,cut,N=10000){
   rdu<-function(n,m) sample(1:m,n,replace=T)
   out = matrix(c(rep(NA,length(c(0:(k + 1)))*n)),ncol = length(c(0:(k + 1))))
