@@ -72,16 +72,15 @@ loglik_dChoi = function(params){
 
   ###Calculate the contributions to the log likelihood.
 
-  # get P(x2',y1') where eps' ~ P(eps'|y0>0,y1>0)
+  # following derivation in CraggIVNoteDChoi
   require(mvtnorm)
-  l = c(0,-Inf); u = c(Inf,0) #DChoi's way
-  #l = c(0,0); u = c(Inf,Inf) #makes more sense to me
-  f <- function(x){pmvnorm(lower = l, upper = u, mean = x, sigma = sig2_y1y0_x2)}
+  l = c(0,0); u = c(Inf,Inf)
+  f <- function(x){pmvnorm(lower = l, upper = u, mean = x, sigma = Sig[1:2,1:2])}
   ll1_int <- tryCatch({
-    apply(mu_y1y0_x2,2,f)
+    apply(cbind(mu_y0,mu_y1),1,f)
   }, error = function(e){
     print(paste("Error message from pmvnorm: ",e))
-    print(sig2_y1y0_x2)
+    print(Sig[1:2,1:2])
     return(Inf)
   }, warning = function(w){
     print(paste("Warning message from pmvnorm: ",w))
@@ -92,8 +91,10 @@ loglik_dChoi = function(params){
   ll0 = pnorm(0,mean=mu_y0_x2,sd=sqrt(sig2_y0_x2),log.p = TRUE) + dnorm(x2,mean=mu_x2,sd=sqrt(sig2_x2),log = TRUE)
 
   #when y1>0
-  ll1 = pnorm(0,mean=mu_y0_x2,sd=sqrt(sig2_y0_x2),log.p = TRUE,lower.tail = FALSE)+
-    ll1_int
+  ll1 = pnorm(0,mean=mu_y0_y1x2,sd=sqrt(sig2_y0_y1x2),log.p = TRUE,lower.tail = FALSE)
+        + dnorm(y1,mean = mu_y1_x2,sd=sqrt(sig2_y1_x2),log=T)
+        + dnorm(x2,mean = mu_x2, sd=sqrt(sig2_x2),log=T)
+        -ll1_int
 
   #Combine them, based on y1
   ll = ifelse(censored,ll0,ll1)
