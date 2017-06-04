@@ -24,7 +24,8 @@ chol = chol(cov)
 true = c(chol[3,3],chol[2,2],chol[2,3],chol[1,3],chol[1,2],beta,gamma,pi)
 
 # run the optimizer and examine
-#ll = optim(start,loglik_dChoi,hessian = T)
+ll = optim(start,loglik_dChoi,hessian = T)
 ll = optim(true,loglik_dChoi,hessian = T)
-cbind(ll$par,true) #how are the parameters
+nm = c('sigv','sigu','t0','t1','rho','beta11','beta12','beta2','gamma11','gamma12','gamma2','pi11','pi12','pi2')
+data.frame(name = nm,est = ll$par,true = true) #how are the parameters
 min(eigen(ll$hessian)$values); max(eigen(ll$hessian)$values) #should both be >0

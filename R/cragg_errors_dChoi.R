@@ -30,17 +30,19 @@ cragg_errs_DC<-function(cov,pi,x1,gamma,beta,n,z){
   y0 = gamma[1] +gamma[2]*x1 + gamma[3]*x2 + errs[,1]
 
   yr3 = as.numeric(y0>=0)
+  y = rep(0,length(yr3))
 
   # redraw all three (call the vector e') as long as y0<0 from P(e'|y0'>0,y1'>0)
-  for(j in which(yr3!=0)){
-    while(yr3[j]<0){
-      err = mvrnorm(1,c(0,0,0),Sig_err)
-      t2 = pi[1] + pi[2]*x1 + pi[3]*z + err[3]
-      t0 = gamma[1] + gamma[2]*x1 + gamma[3]*t2 + err[1]
-      t1 = beta[1] + beta[2]*x1 + beta[3]*t2 + err[2]
-      if( (t1>0) & (t0>0) ){yr3[j]=t1; x2[j] = t2;errs[j,]=err}
+  for(j in which(yr3==1)){
+    while(y[j]==0){
+      err = mvrnorm(1,c(0,0,0),cov)
+      t2 = pi[1] + pi[2]*x1[j] + pi[3]*z[j] + err[3]
+      t0 = gamma[1] + gamma[2]*x1[j] + gamma[3]*t2 + err[1]
+      t1 = beta[1] + beta[2]*x1[j] + beta[3]*t2 + err[2]
+      if( (t1>0) & (t0>0) ){y[j]=t1; x2[j] = t2;errs[j,]=err}
     }
   }
-  return(list(errors = errs, endog = x2, yStar = yr3))
+  yStar = y*yr3
+  return(list(errors = errs, endog = x2, yStar = yStar))
 }
 
