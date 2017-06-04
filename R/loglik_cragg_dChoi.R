@@ -1,6 +1,10 @@
 ### This function returns the negative log-likelihood (so that it can be minimized)
 ### The math follows Dave Choi's derivation for dChoi cragg errors, but I don't
+<<<<<<< HEAD
 ### think the last bit of the ll is right. We are working on it.
+=======
+### think the last bit of the ll is right. Have to work through his math.
+>>>>>>> ca642ad... I added some files which test the likelihood discussed with Dave Choi. Currently its not working, and he and I discussed some reasons why, so I'm working on it. The problem is in the second half of the likelihood, where there appears to be some conditioning that is missing.
 
 loglik_dChoi = function(params){
   sig_v = params[1]
@@ -44,7 +48,11 @@ loglik_dChoi = function(params){
   Sig = A%*%Sig_err%*%t(A)
   if(min(eigen(Sig)$values)<=0){return(Inf)}
 
+<<<<<<< HEAD
   #Means for (y0^*, y1*, x2).
+=======
+  #Means for (y0^*, log y1*, x2).
+>>>>>>> ca642ad... I added some files which test the likelihood discussed with Dave Choi. Currently its not working, and he and I discussed some reasons why, so I'm working on it. The problem is in the second half of the likelihood, where there appears to be some conditioning that is missing.
   mu_y0 = gamma11 + gamma12*x1 + gamma2*(pi11 + pi12*x1 + pi2*z)
   mu_y1 = beta11 + beta12*x1 + beta2*(pi11 + pi12*x1 + pi2*z)
   mu_x2 = pi11 + x1*pi12 + z*pi2
@@ -72,6 +80,7 @@ loglik_dChoi = function(params){
 
   ###Calculate the contributions to the log likelihood.
 
+<<<<<<< HEAD
   # following derivation in CraggIVNoteDChoi
   require(mvtnorm)
   l = c(0,0); u = c(Inf,Inf)
@@ -81,6 +90,19 @@ loglik_dChoi = function(params){
   }, error = function(e){
     print(paste("Error message from pmvnorm: ",e))
     print(Sig[1:2,1:2])
+=======
+  # get the joint probability distribution of y0 and y1 given x2
+  # in dave's notes, y1<0, but I don't understand that.
+  require(mvtnorm)
+  l = c(0,-Inf); u = c(Inf,0) #DChoi's way
+  #l = c(0,0); u = c(Inf,Inf) #makes more sense to me
+  f <- function(x){pmvnorm(lower = l, upper = u, mean = x, sigma = sig2_y1y0_x2)}
+  ll1_int <- tryCatch({
+    apply(mu_y1y0_x2,2,f)
+  }, error = function(e){
+    print(paste("Error message from pmvnorm: ",e))
+    print(sig2_y1y0_x2)
+>>>>>>> ca642ad... I added some files which test the likelihood discussed with Dave Choi. Currently its not working, and he and I discussed some reasons why, so I'm working on it. The problem is in the second half of the likelihood, where there appears to be some conditioning that is missing.
     return(Inf)
   }, warning = function(w){
     print(paste("Warning message from pmvnorm: ",w))
@@ -90,11 +112,21 @@ loglik_dChoi = function(params){
   #When y1=0:
   ll0 = pnorm(0,mean=mu_y0_x2,sd=sqrt(sig2_y0_x2),log.p = TRUE) + dnorm(x2,mean=mu_x2,sd=sqrt(sig2_x2),log = TRUE)
 
+<<<<<<< HEAD
   #when y1>0
   ll1 = pnorm(0,mean=mu_y0_y1x2,sd=sqrt(sig2_y0_y1x2),log.p = TRUE,lower.tail = FALSE)
         + dnorm(y1,mean = mu_y1_x2,sd=sqrt(sig2_y1_x2),log=T)
         + dnorm(x2,mean = mu_x2, sd=sqrt(sig2_x2),log=T)
         -ll1_int
+=======
+  #When y1>0: (not done)
+  # ll1 = pnorm(0,mean=mu_y0_y1x2, sd=sqrt(sig2_y0_y1x2),log.p=TRUE, lower.tail = FALSE) +
+  #   dnorm(y1, mean=mu_y1_x2, sd=sqrt(sig2_y1_x2),log = TRUE) +
+  #   dnorm(x2,mean=mu_x2,sd=sqrt(sig2_x2),log = TRUE) -
+  #   pnorm(0,mean=mu_y1_x2,sd =sqrt(sig2_y1_x2),log.p=T,lower.tail = T)
+
+  ll1 = ll1_int+dnorm(y1, mean=mu_y1_x2, sd=sqrt(sig2_y1_x2),log = TRUE)
+>>>>>>> ca642ad... I added some files which test the likelihood discussed with Dave Choi. Currently its not working, and he and I discussed some reasons why, so I'm working on it. The problem is in the second half of the likelihood, where there appears to be some conditioning that is missing.
 
   #Combine them, based on y1
   ll = ifelse(censored,ll0,ll1)
