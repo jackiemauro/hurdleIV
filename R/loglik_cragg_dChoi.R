@@ -1,4 +1,4 @@
-### Trying to do this MCMC style
+###
 
 loglik_dChoi = function(params){
   sig_v = params[1]
@@ -58,22 +58,40 @@ loglik_dChoi = function(params){
   sig2_y0_y1x2 = Sig[1,1] - Sig[1,2:3,drop=FALSE]%*%solve(Sig[2:3,2:3])%*%Sig[2:3,1,drop=FALSE]
 
   #Parameters for y0star and y1star given x2
-  mu_y1y0_x2 = t(cbind(mu_y0,mu_y1)) + Sig[1:2,3]%*%solve(sig2_x2)%*%t(x2-mu_x2)
+  mu_y1y0_x2 = rbind(mu_y0,mu_y1) + Sig[1:2,3]%*%solve(sig2_x2)%*%t(x2-mu_x2)
   sig2_y1y0_x2 = Sig[1:2,1:2] - Sig[1:2,3]%*%solve(sig2_x2)%*%Sig[3,1:2]
   sig2_y1y0_x2[upper.tri(sig2_y1y0_x2)] <- sig2_y1y0_x2[lower.tri(sig2_y1y0_x2)]
   if(any(eigen(sig2_y1y0_x2)$value<0)){return(-Inf)}
 
   # simulate denominator
-  y0p = rnorm(1e6,mean=mu_y0,sd=sqrt(Sig[1,1]))
-  y1p = rnorm(1e6,mean=mu_y1,sd=sqrt(Sig[2,2]))
-  denom = mean(y1p>0&y0p>0)
+  f <- function(x){mvrnorm(1,x,Sig[1:2,1:2])}
+  yps = apply(cbind(mu_y0,mu_y1),1,f)
+  denom = mean(apply(yps,2,prod)>0)
+  # y0p = rnorm(1e6,mean=mu_y0,sd=sqrt(Sig[1,1]))
+  # y1p = rnorm(1e6,mean=mu_y1,sd=sqrt(Sig[2,2]))
+  # denom = mean(y1p>0&y0p>0)
+
+  # integrate to get denominator
+  # l = c(0,0); u = c(Inf,Inf)
+  # f <- function(x){pmvnorm(lower = l, upper = u, mean = x, sigma = Sig[1:2,1:2])}
+  # denom <- tryCatch({
+  #   apply(rbind(mu_y0,mu_y1),2,f)
+  # }, error = function(e){
+  #   print(paste("Error message from pmvnorm: ",e))
+  #   print( Sig[1:2,1:2])
+  #   return(Inf)
+  # }, warning = function(w){
+  #   print(paste("Warning message from pmvnorm: ",w))
+  # }
+  # )
+
 
   ###Calculate the contributions to the log likelihood
   #When y1=0:
   ll0 = pnorm(0,mean=mu_y0_x2,sd=sqrt(sig2_y0_x2),log.p = TRUE) +
     dnorm(x2,mean=mu_x2,sd=sqrt(sig2_x2),log = TRUE)
 
-  #When y1>0: (not done)
+  #When y1>0:
   ll1 = pnorm(0,mean=mu_y0,sd=sqrt(Sig[1,1]),log.p = T, lower.tail = F)+
     pnorm(0,mean=mu_y0_y1x2,sd=sqrt(sig2_y0_y1x2),log.p = T,lower.tail = F)+
     dnorm(y1, mean=mu_y1_x2, sd=sqrt(sig2_y1_x2),log = TRUE) +
@@ -82,7 +100,7 @@ loglik_dChoi = function(params){
 
   #Combine them, based on y1
   ll = ifelse(censored,ll0,ll1)
-  print(-sum(ll))
+  #print(-sum(ll))
 
   #Return the negative log-likelihood
   -sum(ll)

@@ -1,9 +1,10 @@
 #### this is to test DChoi's likelihood (or my interpretation of it) ###
-source("loglik_dChoi.R")
-source("cragg_errors_dChoi.R")
+# source("loglik_cragg_dChoi.R")
+# source("cragg_errors_dChoi.R")
+require(mvtnorm)
 
 # exogenous variable/instrument
-N = 1000
+N = 10000
 x1 = rnorm(N,3,1)
 z = rnorm(N,.2,1)
 
