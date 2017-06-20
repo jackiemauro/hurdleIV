@@ -27,7 +27,7 @@ prior <- function(params){
 }
 
 posterior <- function(param){
-  ll = loglik_dChoi(param); pr = prior(param)
+  ll = loglik_MG(param); pr = prior(param)
   if(is.nan(ll)){cat('ll=',ll)}
   if(is.infinite(ll)){print(paste('post returning Inf')); return(Inf)}
   else{print(paste('post returning',ll+pr));return (ll + pr)}

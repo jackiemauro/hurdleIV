@@ -95,9 +95,8 @@ loglik_MG = function(params){
     dat = as.list(dat)
     counter_bad = 0
 
-    constants = log(1/(2*pi*det(sig2_y1y0_x2))) #put back in if not doing top=dnorm()
+    constants = log(1/(2*pi*det(sig2_y1y0_x2))) #keep in if not doing top=dnorm()
     integrand <- function(u){
-      # use below with constants
       top = diag(exp(-0.5*cbind(u-dat$mu_y0,dat$y1-dat$mu_y1)%*%solve(sig2_y1y0_x2)%*%rbind(u-dat$mu_y0,dat$y1-dat$mu_y1)))
       #top = dmvnorm(cbind(u,dat$y1), mean=cbind(dat$mu_y0,dat$mu_y1), sigma=sig2_y1y0_x2  )
       bmean = dat$mu_y1 + Sig[2,c(1,3),drop=FALSE]%*%solve(Sig_02)%*%rbind(u-dat$mu_y0,dat$x2-dat$mu_x2)
@@ -120,9 +119,8 @@ loglik_MG = function(params){
         #top = dmvnorm(mpfr(cbind(u,dat$y1),20), mean=cbind(dat$mu_y0,dat$mu_y1), sigma = sig2_y1y0_x2  )
         top = mpfr(log(diag(exp(-0.5*cbind(u-dat$mu_y0,dat$y1-dat$mu_y1)%*%solve(sig2_y1y0_x2)%*%rbind(u-dat$mu_y0,dat$y1-dat$mu_y1)))),100)
         bottom = apply(bmean,2,function(x) pnorm(mpfr(0,100),mean=x,sd=sqrt(sig2_y1_y0x2),lower.tail = F,log.p = TRUE))
-        #ratio = rep(NA,length(top))
-        #for(j in 1:length(top)){ratio[j] = top[j]/bottom[[j]][1,1]}
         ratio = mapply(function(x,y) as.numeric(exp(x-y)), top, bottom)
+        if(!all(is.finite(ratio))){browser()}
         out = unlist(ratio)
         }
 
@@ -131,14 +129,21 @@ loglik_MG = function(params){
     }
 
     tm1 = proc.time()[1]
-    int_result = integrate(integrand,0,Inf,subdivisions = 500)
-    #print(paste("int_result=",int_result$value))
+    int_result <- tryCatch({
+       integrate(integrand,0,Inf)$value
+    }, error = function(e){
+      print(paste("integration error:",e))
+      print(paste("dat=",dat))
+      browser()
+      integrate(integrand,0,Inf,subdivisions = 5000)$value
+    }
+    )
+    #print(paste("int_result=",int_result))
     #print(paste("integral time=",proc.time()[1]-tm1))
 
-
     dnorm(dat$x2,mean=dat$mu_x2,sd=sqrt(sig2_x2),log = TRUE) +
-      #constants +
-      log(int_result$value)
+      constants +
+      log(int_result)
   }
 
   ll1 = sum( apply(dat1,1,f1) )
