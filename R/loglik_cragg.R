@@ -1,13 +1,9 @@
 #' Cragg IV likelihood
 #'
 #' @description Returns the likelihood for a Cragg IV. Requires certain
-#' parameters to be attached/in the environment. Can't figure out how to
-#' just pass them to the function without the function later trying to
-#' optimize for them. This should essentially always be used in a wrapper
-#' for that reason. Note that this uses the third method of truncation for
-#' the errors, described in cragg_errs. This is following the method
-#' worked out with Alex Chouldechova. See "progress report" for more
-#' details.
+#' parameters to be attached/in the environment. Note that this uses the
+#' MG method for the errors, described in cragg_errs. This is following
+#' the method worked out with Max.
 #'
 #' @param t a vector of parameters to be maximized. Order should be:
 #' covariance matrix elements (leaving out leading 1), then betas, then
@@ -16,7 +12,6 @@
 #' @return returns the loglikelihood of the given parameter vector for the
 #' dataset.
 
-# how do i get y1|y0 when i don't observe y0?
 loglik_craggiv<-function(t){
   ############ preliminaries ##############
 
@@ -57,83 +52,100 @@ loglik_craggiv<-function(t){
 
   # get unconditional means of x2's
   n = length(pieces$pi)
-  mu_x2 = matrix(unlist(Map('%*%',ER_mat,pieces$pi)),ncol=n)
+  mu_x2 = c(matrix(unlist(Map('%*%',ER_mat,pieces$pi)),ncol=n))
+  x2 = endog_mat$endog
 
   # get unconditional means of y's
-  mu_y0 = y_mat%*%pieces$gamma
-  mu_y1 = y_mat%*%pieces$beta
+  mu_y0 = c(y_mat%*%pieces$gamma)
+  mu_y1 = c(y_mat%*%pieces$beta)
 
   # get conditional means
   k = dim(Sig)[1]
+  if(k>3){print("Cragg IV can only handle one endogenous regressor at present");stop()}
   j = num_endog
-  sig2_x2 = as.matrix(Sig[(k+1-j):k,(k+1-j):k])
+  sig2_x2 = as.matrix(Sig[3:k,3:k])
 
   #Parameters for y0star given x2
   if(cant.solve(sig2_x2)){return(-Inf)}
-  mu_y0_x2 = mu_y0 + t(Sig[1,(k+1-j):k]%*%solve(sig2_x2)%*%t(endog_mat-mu_x2))
-  sig2_y0_x2 = Sig[1,1] - Sig[1,(k+1-j):k]%*%solve(sig2_x2)%*%Sig[(k+1-j):k,1]
+  mu_y0_x2 = mu_y0 + t(Sig[1,3:k]%*%solve(sig2_x2)%*%t(x2-mu_x2))
+  sig2_y0_x2 = Sig[1,1] - Sig[1,3:k]%*%solve(sig2_x2)%*%Sig[(k+1-j):k,1]
 
-  #Parameters for y1star given y0star and x2
-  if(cant.solve(Sig[2:k,2:k])){return(-Inf)}
-  mu_y1_y0x2 = mu_y1 + t(Sig[1,2:k,drop=FALSE]%*%solve(Sig[2:k,2:k])%*%t(cbind(outcome-mu_y1,endog_mat-mu_x2)))
-  sig2_y1_y0x2 = Sig[1,1] - Sig[1,2:k,drop=FALSE]%*%solve(Sig[2:k,2:k])%*%Sig[2:k,1,drop=FALSE]
+  #Parameters for y1star given x2
+  mu_y1_x2 = mu_y1 + Sig[2,3]/Sig[3,3]*(x2-mu_x2)
+  sig2_y1_x2 = Sig[2,2] - Sig[2,3]^2/Sig[3,3]
+
+  #Parameters for y0star given y1star and x2
+  mu_y0_y1x2 = c(mu_y0 + Sig[1,2:k,drop=FALSE]%*%solve(Sig[2:k,2:k])%*%rbind(y1-mu_y1,x2-mu_x2))
+  sig2_y0_y1x2 = Sig[1,1] - Sig[1,2:k,drop=FALSE]%*%solve(Sig[2:k,2:k])%*%Sig[2:k,1,drop=FALSE]
 
   #Parameters for y0star and y1star given x2
-  mu_y1y0_x2 = t(cbind(mu_y0,mu_y1)) + Sig[1:2,3:k]%*%solve(sig2_x2)%*%t(endog_mat-mu_x2)
+  mu_y1y0_x2 = t(cbind(mu_y0,mu_y1)) + Sig[1:2,3:k]%*%solve(sig2_x2)%*%t(x2-mu_x2)
   sig2_y1y0_x2 = Sig[1:2,1:2] - Sig[1:2,3:k]%*%solve(sig2_x2)%*%Sig[3:k,1:2]
   sig2_y1y0_x2[upper.tri(sig2_y1y0_x2)] <- sig2_y1y0_x2[lower.tri(sig2_y1y0_x2)]
   if(any(eigen(sig2_y1y0_x2)$value<0)){return(-Inf)}
 
+  #Parameters for y1star given y0star and x2
+  Sig_02 = Sig[-2,-2]
+  sig2_y1_y0x2 = Sig[2,2] - Sig[2,c(1,3),drop=FALSE]%*%solve(Sig_02)%*%Sig[c(1,3),2,drop=FALSE]
+
+
 
   ############# calculate likelihood #############
-  x2part = 0
-  for(i in 1:j){
-    temp = dnorm(endog_mat[,i],mean=mu_x2[,i],sd=sqrt(sig2_x2[i,i]),log = TRUE)
-    x2part = x2part + temp
+  dat = data.frame(y1=y1,x2=x2
+                   ,mu_y0_y1x2=mu_y0_y1x2
+                   ,mu_y1_x2=mu_y1_x2,mu_y0_x2=mu_y0_x2
+                   ,mu_x2=mu_x2,mu_y1=mu_y1,mu_y0=mu_y0)
+  dat0 = dat[y1==0,]
+  dat1 = dat[y1>0,]
+
+
+  # ll0
+  f0 <- function(dat){
+    dat = as.list(dat)
+    pnorm(0,mean=dat$mu_y0_x2,sd=sqrt(sig2_y0_x2),log.p = TRUE) +
+      dnorm(dat$x2,mean=dat$mu_x2,sd=sqrt(sig2_x2),log = TRUE)
   }
 
-  #ll0 integral
-  l = c(0,-Inf); u = c(Inf,0)
-  f <- function(x){pmvnorm(lower = l, upper = u, mean = x, sigma = sig2_y1y0_x2)}
-  ll0_int <- tryCatch({
-      apply(mu_y1y0_x2,2,f)
-    }, error = function(e){
-      print(paste("Error message from pmvnorm: ",e))
-      print(sig2_y1y0_x2)
-      return(Inf)
-    }, warning = function(w){
-      print(paste("Warning message from pmvnorm: ",w))
+  ll0 = sum( apply(dat0,1,f0))
+
+
+  #ll1
+  f1_max <- function(dat){
+    prec=100
+    dat = as.list(dat)
+    counter_bad = 0
+
+    mean_y1_y0x2 = function(y0,x2, mu_y1, mu_y0, mu_x2){mu_y1 + Sig[2,c(1,3),drop=FALSE]%*%solve(Sig_02)%*%rbind(y0-mu_y0,x2-mu_x2)}
+
+    integrand <- function(u){
+      top_func = function(u){
+        mu_y1_y0x2 = mean_y1_y0x2(u,dat$x2, dat$mu_y1, dat$mu_y0, dat$mu_x2)
+        dnorm.hack(dat$y1, mu_y1_y0x2, sqrt(sig2_y1_y0x2) ,log=TRUE) +
+          dnorm.hack(u, dat$mu_y0_x2, sqrt(sig2_y0_x2),log=TRUE) + dnorm.hack(dat$x2, dat$mu_x2, sqrt(sig2_x2),log=TRUE)}
+
+      bot_func = function(u){
+        m = mean_y1_y0x2(u, dat$x2, dat$mu_y1, dat$mu_y0, dat$mu_x2)
+        pnorm(mpfr(0,prec), m, rep(sqrt(sig2_y1_y0x2),length(m)), lower.tail=FALSE, log.p = TRUE)
+      }
+
+      top = top_func(u)
+      bottom = bot_func(u)
+      out = exp(top-bottom)
+      out = as.numeric(out)
+      out
     }
-    )
 
-  #ll1 integral -- not happy with this. don't think it knows to int over y0
-  l = c(0,0); u = c(Inf,Inf)
-  f <- function(x){pmvnorm(lower = l, upper = u, mean = x, sigma = sig2_y1_y0x2)}
-  ll0_int <- tryCatch({
-    apply(mu_y1_y0x2,2,f)
-  }, error = function(e){
-    print(paste("Error message from pmvnorm: ",e))
-    print(sig2_y1_y0x2)
-    return(Inf)
-  }, warning = function(w){
-    print(paste("Warning message from pmvnorm: ",w))
+    int_result = integrate(integrand,0,Inf)
+
+    log(int_result$value)
   }
-  )
 
-  #When y1=0:
-  ll0 = pnorm(0,mean = mu_y0_x2, sd=sqrt(sig2_y0_y1x2),log.p = T) + x2part
+  ll1 = sum( apply(dat1,1,f1_max) )
 
-  #When y1>0:
-  ll1 = dnorm(outcome, mean=mu_y1_y0x2, sd=sqrt(sig2_y1_y0x2),log = TRUE) -
+  # print(paste("neg likelihood=",-(ll0+ll1)))
+  # print(paste('total time:',proc.time()[1] -tm0))
 
-
-  #Combine them, based on y1
-  ll = ifelse(censored,ll0,ll1)
-
-  #Return the negative log-likelihood
-  print(paste("min eigen:",min(eigen(Sig)$value)))
-  print(paste("likelihood: ",-sum(ll,na.rm =T)))
-  -sum(ll, na.rm = T)
+  -(ll0+ll1)
 }
 
 

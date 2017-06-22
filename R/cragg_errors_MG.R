@@ -1,8 +1,10 @@
 #' Resample for truncated normal errors
 #'
 #' @description There are a bunch of ways of thinking about this DGP. This is
-#' (I think) what Max G'Sell had in mind. This can only handle one endogenous
-#' variable and one exogenous variable for now.
+#' what Max G'Sell had in mind. We generate x2 and y0 first, and then sample
+#' from y1 conditionally on those two and on itself being positive.
+#' This can only handle one endogenous variable for now. Testing it with
+#' more than one exogenous variable.
 #'
 #' @param cov the covariance matrix. This should be untransformed, the
 #' terms will be multiplied by the coefficients within the resampling
@@ -23,8 +25,8 @@ cragg_errs_MG<-function(cov,pi,x1,gamma,beta,n,z){
 
   #Transformation matrix from (eta, u, v) to (y0*, y1*, x2)
   A = rbind(
-    c(1,0,gamma[3]),
-    c(0,1,beta[3]),
+    c(1,0,tail(gamma,1)),
+    c(0,1,tail(beta,1)),
     c(0,0,1)
   )
 
@@ -32,12 +34,15 @@ cragg_errs_MG<-function(cov,pi,x1,gamma,beta,n,z){
   Sig = A%*%cov%*%t(A)
   Sig_02 = Sig[-2,-2]
 
-  mu_x2 = pi[1] + pi[2]*x1 + pi[3]*z
-  mu_y1 = beta[1] +beta[2]*x1 + beta[3]*mu_x2
-  mu_y0 = gamma[1] +gamma[2]*x1 + gamma[3]*mu_x2
+  frame1 = as.matrix(cbind(1,x1,z))
+  mu_x2 = frame1%*%pi
+  frame2 = as.matrix(cbind(1,x1,mu_x2))
+  mu_y1 = frame2%*%beta
+  mu_y0 = frame2%*%gamma
 
   x2 = mu_x2 + errs[,3]
-  y0 = gamma[1] +gamma[2]*x1 + gamma[3]*x2 + errs[,1]
+  frame3 = as.matrix(cbind(1,x1,x2))
+  y0 = frame3%*%gamma + errs[,1]
 
   mu_y1_y0x2 = mu_y1 + t(Sig[2,c(1,3),drop=FALSE]%*%solve(Sig_02)%*%t(cbind(y0-mu_y0,x2-mu_x2)))
   sig2_y1_y0x2 = Sig[2,2] - Sig[2,c(1,3),drop=FALSE]%*%solve(Sig_02)%*%Sig[c(1,3),2,drop=FALSE]
@@ -50,6 +55,6 @@ cragg_errs_MG<-function(cov,pi,x1,gamma,beta,n,z){
     }
   }
 
-  return(list(errors = errs, endog = x2, yStar = y1))
+  return(list(errors = errs, endog = x2, y0 = as.numeric(y0>0), yStar = y1))
 }
 
