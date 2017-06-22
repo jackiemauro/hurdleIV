@@ -75,7 +75,7 @@ loglik_craggiv<-function(t){
   sig2_y1_x2 = Sig[2,2] - Sig[2,3]^2/Sig[3,3]
 
   #Parameters for y0star given y1star and x2
-  mu_y0_y1x2 = c(mu_y0 + Sig[1,2:k,drop=FALSE]%*%solve(Sig[2:k,2:k])%*%rbind(y1-mu_y1,x2-mu_x2))
+  mu_y0_y1x2 = c(mu_y0 + Sig[1,2:k,drop=FALSE]%*%solve(Sig[2:k,2:k])%*%rbind(outcome-mu_y1,x2-mu_x2))
   sig2_y0_y1x2 = Sig[1,1] - Sig[1,2:k,drop=FALSE]%*%solve(Sig[2:k,2:k])%*%Sig[2:k,1,drop=FALSE]
 
   #Parameters for y0star and y1star given x2
@@ -91,12 +91,12 @@ loglik_craggiv<-function(t){
 
 
   ############# calculate likelihood #############
-  dat = data.frame(y1=y1,x2=x2
+  dat = data.frame(y1=outcome,x2=x2
                    ,mu_y0_y1x2=mu_y0_y1x2
                    ,mu_y1_x2=mu_y1_x2,mu_y0_x2=mu_y0_x2
                    ,mu_x2=mu_x2,mu_y1=mu_y1,mu_y0=mu_y0)
-  dat0 = dat[y1==0,]
-  dat1 = dat[y1>0,]
+  dat0 = dat[outcome==0,]
+  dat1 = dat[outcome>0,]
 
 
   # ll0
