@@ -35,5 +35,6 @@ true = c(chol[3,3],chol[2,2],chol[2,3],chol[1,3],chol[1,2],beta,gamma,pi)
 #ll = optim(start,loglik_MG,hessian = T)
 JMcounter = 0
 ll = optim(true,loglik_MG,hessian = T)
-cbind(ll$par,true) #how are the parameters
+nms = c("sigv", "sigu","tau1","tau0","rho","beta11","beta12","beta2","gamma11","gamma12","gamma2","pi11","pi12","pi2")
+View(cbind(nms,ll$par,true)) #how are the parameters
 min(eigen(ll$hessian)$values); max(eigen(ll$hessian)$values) #should both be >0
