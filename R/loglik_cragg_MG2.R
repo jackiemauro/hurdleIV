@@ -1,3 +1,5 @@
+#Rprof('testprof.out')
+
 # ### This function returns the negative log-likelihood (so that it can be minimized)
 # ### The math follows Max G'Sell's derivation.
 #
@@ -65,7 +67,7 @@ dnorm.hack = function (x, mean = 0, sd = 1, log = FALSE)
 
 
 
-loglik_MG = function(params){
+loglik_MG2 = function(params){
   require(Rmpfr)
   sig_v = params[1]
   sig_u = params[2]
@@ -129,7 +131,8 @@ loglik_MG = function(params){
   sig2_y0_y1x2 = Sig[1,1] - Sig[1,2:3,drop=FALSE]%*%solve(Sig[2:3,2:3])%*%Sig[2:3,1,drop=FALSE]
 
   #Parameters for y0star and y1star given x2
-  sig2_y1y0_x2 = Sig[1:2,1:2] - Sig[3,1:2]%*%solve(sig2_x2)%*%t(Sig[3,1:2])
+  #mu_y1y0_x2 = c(t(t(cbind(mu_y0,mu_y1)) + Sig[1:2,3]%*%solve(sig2_x2)%*%t(x2-mu_x2)))
+  sig2_y1y0_x2 = Sig[1:2,1:2] - Sig[1:2,3]%*%solve(sig2_x2)%*%Sig[3,1:2]
   sig2_y1y0_x2[upper.tri(sig2_y1y0_x2)] <- sig2_y1y0_x2[lower.tri(sig2_y1y0_x2)]
   if(any(eigen(sig2_y1y0_x2)$value<0)){return(-Inf)}
 
@@ -162,55 +165,55 @@ loglik_MG = function(params){
 
   #ll1
 
-  f1 <- function(dat){
-    dat = as.list(dat)
-    counter_bad = 0
-
-    constants = log(1/(2*pi*det(sig2_y1y0_x2))) #put back in if not doing top=dnorm()
-    integrand <- function(u){
-      # use below with constants
-      top = diag(exp(-0.5*cbind(u-dat$mu_y0,dat$y1-dat$mu_y1)%*%solve(sig2_y1y0_x2)%*%rbind(u-dat$mu_y0,dat$y1-dat$mu_y1)))
-      #top = dmvnorm(cbind(u,dat$y1), mean=cbind(dat$mu_y0,dat$mu_y1), sigma=sig2_y1y0_x2  )
-      bmean = dat$mu_y1 + Sig[2,c(1,3),drop=FALSE]%*%solve(Sig_02)%*%rbind(u-dat$mu_y0,dat$x2-dat$mu_x2)
-
-      tm2 = proc.time()[1]
-      bottom = apply(bmean,2,function(x) pnorm(0,mean=x,sd=sqrt(sig2_y1_y0x2),lower.tail = F))
-      #print(paste("bottom time=",proc.time()[1]-tm2))
-
-      #ratio = rep(NA,length(top))
-      #for(i in 1:length(top)){ratio[i] = as.numeric(top[i]/bottom[[i]][1,1])}
-      ratio = top/bottom
-      out = as.numeric(ratio)
-
-      # if(any(is.nan(out))){browser()}
-      if(!all(is.finite(out))){
-        counter_bad = 1 + counter_bad
-        #print(paste("got a bad one, round ", counter_bad))
-        #browser()
-        # can't get this to work
-        #top = dmvnorm(mpfr(cbind(u,dat$y1),20), mean=cbind(dat$mu_y0,dat$mu_y1), sigma = sig2_y1y0_x2  )
-        top = mpfr(log(diag(exp(-0.5*cbind(u-dat$mu_y0,dat$y1-dat$mu_y1)%*%solve(sig2_y1y0_x2)%*%rbind(u-dat$mu_y0,dat$y1-dat$mu_y1)))),100)
-        bottom = apply(bmean,2,function(x) pnorm(mpfr(0,100),mean=x,sd=sqrt(sig2_y1_y0x2),lower.tail = F,log.p = TRUE))
-        #ratio = rep(NA,length(top))
-        #for(j in 1:length(top)){ratio[j] = top[j]/bottom[[j]][1,1]}
-        ratio = mapply(function(x,y) as.numeric(exp(x-y)), top, bottom)
-        out = unlist(ratio)
-      }
-
-
-      return(out)
-    }
-
-    tm1 = proc.time()[1]
-    int_result = integrate(integrand,0,Inf)
-    #print(paste("int_result=",int_result$value))
-    #print(paste("integral time=",proc.time()[1]-tm1))
-
-
-    dnorm(dat$x2,mean=dat$mu_x2,sd=sqrt(sig2_x2),log = TRUE) +
-      #constants +
-      log(int_result$value)
-  }
+  #f1 <- function(dat){
+  #  dat = as.list(dat)
+  #  counter_bad = 0
+  #
+  #  constants = log(1/(2*pi*det(sig2_y1y0_x2))) #put back in if not doing top=dnorm()
+  #  integrand <- function(u){
+  #    # use below with constants
+  #    top = diag(exp(-0.5*cbind(u-dat$mu_y0,dat$y1-dat$mu_y1)%*%solve(sig2_y1y0_x2)%*%rbind(u-dat$mu_y0,dat$y1-dat$mu_y1)))
+  #    #top = dmvnorm(cbind(u,dat$y1), mean=cbind(dat$mu_y0,dat$mu_y1), sigma=sig2_y1y0_x2  )
+  #    bmean = dat$mu_y1 + Sig[2,c(1,3),drop=FALSE]%*%solve(Sig_02)%*%rbind(u-dat$mu_y0,dat$x2-dat$mu_x2)
+  #
+  #    tm2 = proc.time()[1]
+  #    bottom = apply(bmean,2,function(x) pnorm(0,mean=x,sd=sqrt(sig2_y1_y0x2),lower.tail = F))
+  #    #print(paste("bottom time=",proc.time()[1]-tm2))
+  #
+  #    #ratio = rep(NA,length(top))
+  #    #for(i in 1:length(top)){ratio[i] = as.numeric(top[i]/bottom[[i]][1,1])}
+  #    ratio = top/bottom
+  #    out = as.numeric(ratio)
+  #
+  #    # if(any(is.nan(out))){browser()}
+  #    if(!all(is.finite(out))){
+  #      counter_bad = 1 + counter_bad
+  #      #print(paste("got a bad one, round ", counter_bad))
+  #      #browser()
+  #      # can't get this to work
+  #      #top = dmvnorm(mpfr(cbind(u,dat$y1),20), mean=cbind(dat$mu_y0,dat$mu_y1), sigma = sig2_y1y0_x2  )
+  #      top = mpfr(log(diag(exp(-0.5*cbind(u-dat$mu_y0,dat$y1-dat$mu_y1)%*%solve(sig2_y1y0_x2)%*%rbind(u-dat$mu_y0,dat$y1-dat$mu_y1)))),100)
+  #      bottom = apply(bmean,2,function(x) pnorm(mpfr(0,100),mean=x,sd=sqrt(sig2_y1_y0x2),lower.tail = F,log.p = TRUE))
+  #      #ratio = rep(NA,length(top))
+  #      #for(j in 1:length(top)){ratio[j] = top[j]/bottom[[j]][1,1]}
+  #      ratio = mapply(function(x,y) as.numeric(exp(x-y)), top, bottom)
+  #      out = unlist(ratio)
+  #    }
+  #
+  #
+  #    return(out)
+  #  }
+  #
+  #  tm1 = proc.time()[1]
+  #  int_result = integrate(integrand,0,Inf)
+  #  #print(paste("int_result=",int_result$value))
+  #  #print(paste("integral time=",proc.time()[1]-tm1))
+  #
+  #
+  #  dnorm(dat$x2,mean=dat$mu_x2,sd=sqrt(sig2_x2),log = TRUE) +
+  #    #constants +
+  #    log(int_result$value)
+  #}
 
   f1_max <- function(dat){
     prec=100
@@ -258,10 +261,14 @@ loglik_MG = function(params){
   ll1 = sum( apply(dat1,1,f1_max) )
 
   print(paste("neg likelihood=",-(ll0+ll1)))
-  # assign("JMcounter",JMcounter+1,envir = .GlobalEnv)
-  # print(paste("round:",JMcounter))
+  assign("JMcounter",JMcounter+1,envir = .GlobalEnv)
+  print(paste("round:",JMcounter))
   print(paste('total time:',proc.time()[1] -tm0))
 
   #Return the negative log-likelihood, since I will be using optim (which minimizes instead of maximizing)
   -(ll0+ll1)
 }
+
+
+
+#summaryRprof('testprof.out')
