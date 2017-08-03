@@ -52,6 +52,7 @@ hurdle.IV<-function(formula,
   }
 
   ###### format your data, grouping variable types #####
+  data = data[complete.cases(data),]
   attach(data)
   inst_mat = as.data.frame(matrix(inst,nrow = dim(data)[1], byrow = F))
   inst_names = rename.input(substitute(inst))
