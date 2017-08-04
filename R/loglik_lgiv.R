@@ -18,6 +18,10 @@ loglik_lgiv<-function(t){
   ############ preliminaries ##############
   # get everyone named
   if(length(t)!=len_cov + 2*num_betas + Reduce("+",numpis)){
+    print(paste('num betas=',num_betas))
+    print(paste('num pis=',numpis))
+    print(paste('len cov=',len_cov))
+    print(paste('t=',t))
     stop("Start vector should be len_cov + 2*num_betas + number of pis")
   }
 

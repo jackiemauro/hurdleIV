@@ -103,3 +103,19 @@ out = hurdle.IV(y~exog1 + exog2 + exog3 + endog,
                 endog = endog,
                 exog = c(exog1,exog2,exog3),
                 data = dat)
+
+#multiple covariates--one factor (just to see if it runs)
+bs = c(.05,.06,-.01,.01,.02)
+gs = c(-.2,.08,.3,-.3,.07)
+ps = c(1,-1,2,2,3)
+mn = c(1,1,-1)
+s = c(1,1,1)
+
+dat = hurdle.IV.sim(beta=bs, gamma = gs, pi = ps,
+                    exog_mean = mn, exog_sd = s)
+dat = as.data.frame(cbind(dat,exog4 = sample(1:500,dim(dat)[1],replace = T)))
+out = hurdle.IV(y~exog1 + exog2 + exog3 + as.factor(exog4) + endog,
+                inst = inst1,
+                endog = endog,
+                exog = c(exog1,exog2,exog3,exog4),
+                data = dat)
