@@ -36,7 +36,7 @@ start.val <- function(formula
   data$y0 = as.numeric(Iy)
   linear = lm(lin.form, data = data[Iy,])
   prob.form = update(formula, y0 ~ . ) 
-  probit = glm(prob.form, family = binomial("probit"), data = data)
+  probit = glm(prob.form, family = binomial("probit"), data = data,maxit = 5000)
   betas = coef(linear)
   y_sd = sd(linear$residuals)
   gammas = coef(probit)
