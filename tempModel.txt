@@ -1,0 +1,9 @@
+model{
+  for (i in 1:n) {
+    x[i] ~ dnorm(mu, sig2inv)
+  }
+
+  mu ~ dnorm(0, 1000000)
+  sig2inv ~ dgamma(0.001, 0.001)
+  sig2 <- 1/sig2inv
+}

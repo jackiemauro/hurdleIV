@@ -59,16 +59,16 @@ loglik_lgiv<-function(t){
   # get conditional means
   k = dim(Sig)[1]
   j = num_endog
-  sig2_x2 = as.matrix(Sig[(k+1-j):k,(k+1-j):k])
+  sig2_x2 = as.matrix(Sig[3:k,3:k])
 
   #Parameters for y0star given x2
   if(cant.solve(sig2_x2)){return(-Inf)}
-  mu_y0_x2 = mu_y0 + t(Sig[1,(k+1-j):k]%*%solve(sig2_x2)%*%t(endog_mat-mu_x2))
-  sig2_y0_x2 = Sig[1,1] - Sig[1,(k+1-j):k]%*%solve(sig2_x2)%*%Sig[(k+1-j):k,1]
+  mu_y0_x2 = mu_y0 + t(Sig[1,3:k]%*%solve(sig2_x2)%*%t(endog_mat-mu_x2))
+  sig2_y0_x2 = Sig[1,1] - Sig[1,3:k]%*%solve(sig2_x2)%*%Sig[3:k,1]
 
   #Parameters for log(y1star) given x2
-  mu_y1_x2 = mu_y1 + t(Sig[2,(k+1-j):k]%*%solve(sig2_x2)%*%t(endog_mat-mu_x2))
-  sig2_y1_x2 = Sig[2,2] - Sig[2,(k+1-j):k]%*%solve(sig2_x2)%*%Sig[(k+1-j):k,2]
+  mu_y1_x2 = mu_y1 + t(Sig[2,3:k]%*%solve(sig2_x2)%*%t(endog_mat-mu_x2))
+  sig2_y1_x2 = Sig[2,2] - Sig[2,3:k]%*%solve(sig2_x2)%*%Sig[3:k,2]
 
   #Parameters for y0star given y1star and x2
   if(cant.solve(Sig[2:k,2:k])){return(-Inf)}
