@@ -138,10 +138,10 @@ out = hurdle.IV.MCMC(y~exog1 + endog,
                 endog = endog,
                 exog = exog1,
                 data = dat,
-                k = 1000)
+                k = 100)
 
 nms = c('rho','sig2y1','t0','t1','sig2x2','beta1','beta2','beta3','gamma1','gamma2','gamma3','pi1','pi2','pi3')
 true = c(r,sdy1,t1,t1,sdx2,bs,gs,pis)
 mns = apply(out,2,mean);sds = apply(out,2,sd)
 View(cbind(true,mns))
-for(i in 1:14){hist(out[,i]);abline(v = true[i],col = 'red');abline(v = mns[i],col = 'green')}
+for(i in 1:14){hist(out[,i],main = nms[i]);abline(v = true[i],col = 'red');abline(v = mns[i],col = 'green')}

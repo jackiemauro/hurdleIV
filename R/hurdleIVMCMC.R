@@ -7,7 +7,7 @@ hurdle.IV.MCMC<-function(formula,
                     start_val = list(),
                     type = "lognormal",
                     k = 1000,
-                    options = list(cholesky = F
+                    options = list(cholesky = T
                                    , maxit = 5000
                                    , trace = 0
                                    , method = "BFGS")
