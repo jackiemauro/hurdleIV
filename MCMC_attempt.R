@@ -1,5 +1,129 @@
 # another attempt at mcmc
 
+#### laplace demon http://www.sumsar.net/blog/2013/06/three-ways-to-run-bayesian-models-in-r/####
+rm(list = ls())
+library(LaplacesDemon)
+
+y = rnorm(1000,4,2)
+# The model specification
+model <- function(parm, data) {
+  mu <- parm[1]
+  sigma <- exp(parm[2])
+  log_lik <- sum(dnorm(data$y, mu, sigma, log = T))
+  post_lik <- log_lik + dnorm(mu, 0, 100, log = T) + dlnorm(sigma, 0, 4, log = T)
+  # This list is returned and has to follow a the format specified by
+  # LaplacesDemon.
+  list(LP = post_lik, Dev = -2 * log_lik, Monitor = c(post_lik, sigma), yhat = NA,
+       parm = parm)
+}
+
+# Running the model
+data_list <- list(N = length(y), y = y, mon.names = c("post_lik", "sigma"),
+                  parm.names = c("mu", "log.sigma"))
+mcmc_samples <- LaplacesDemon(Model = model, Data = data_list, Iterations = 30000,
+                              Algorithm = "HARM", Thinning = 1)
+
+plot(mcmc_samples, BurnIn = 10000, data_list)
+
+# basic IV
+rm(list = ls())
+require(mvtnorm); require(MASS)
+N = 10000
+z <- rnorm(N,2,1)
+sig2y1<-2; sig2x<-3; t0<-.2
+Pi1<-1; Pi2<-3; B1<-2; B2<-1
+errs = mvrnorm(n = N, mu = c(0,0), Sigma = matrix(c(sig2y1,t0,t0,sig2x),ncol = 2, byrow = T))
+x2 <- Pi1 + Pi2*z + errs[,2]
+y1 <- B1 + B2*x2 + errs[,1]
+
+model <- function(parm, data) {
+  b1 <- parm[1]; b2 <- parm[2]; p1 <- parm[3]; p2 <- parm[4]
+  sigy1 <- exp(parm[5]); sigx <- exp(parm[6]); t0 <- parm[7]
+
+  mu_x <- p1 + p2*data$z
+  mu_y <- b1 + b2*mu_x
+  Sig = matrix(c(sigy1,t0,t0,sigx),ncol = 2, byrow = T)
+
+  #Transformation matrix from (eta, u, v) to (y0*, log y1*, x2) (without the mean)
+  A = rbind(c(1,b2),c(0,1))
+  #Covariance of (y0*, log y1*, x2)
+  Sig2 = A%*%Sig%*%t(A)
+
+  mu_y_x = mu_y + (Sig2[1,2]/Sig2[2,2])*(data$x-mu_x)
+  sig2_y_x = Sig2[1,1] - (Sig2[1,2]^2)/Sig2[2,2]
+
+  if(sig2_y_x>0){
+    log_lik <- sum(dnorm(data$y,mu_y_x,sqrt(sig2_y_x),log = T) + dnorm(data$x,mu_x,sqrt(Sig2[2,2]),log =T))
+  }
+  else{
+    mat = data.frame(y=data$y,x=data$x,predy=mu_y,predx = mu_x)
+    singlelikelihoods = apply(mat,1,function(x) dmvnorm(x[1:2],mean = x[3:4],sigma = Sig,log = T))
+    log_lik <- sum(singlelikelihoods)
+  }
+
+  log_prior <- sum(dnorm(c(b1,b2,p1,p2,t0),0,100,log = T))+dlnorm(sigy1, 0, 4, log = T)+dlnorm(sigx, 0, 4, log = T)
+
+  post_lik <- log_lik + log_prior
+
+  # This list is returned and has to follow a the format specified by
+  # LaplacesDemon.
+  list(LP = post_lik, Dev = -2 * log_lik, Monitor = c(post_lik, sigx,sigy1), yhat = NA,parm = parm)
+}
+
+# Running the model
+data_list <- list(N = length(y1), y = y1,x = x2, z = z , mon.names = c("post_lik", "sigx","sigy1"),
+                  parm.names = c("B1","B2","Pi1","Pi2","log.sigy","log.sigx","tau0"))
+mcmc_samples <- LaplacesDemon(Model = model, Data = data_list, Iterations = 50000,
+                              Algorithm = "HARM", Thinning = 1)
+
+plot(mcmc_samples, BurnIn = 10000, data_list)
+
+
+# lognormal IV
+rm(list = ls())
+N = 10000
+z <- rnorm(N,2,1); x1 <- rnorm(N,-1,3)
+sig2y1<-2; sig2y0<-1; rho <- .1; t0<-.2; t1 <- .3; sig2x<-3
+Pi1<-1; Pi2<-3; B1<-2; B2<-1;G1<- -1; G2 <- 2
+errs = mvrnorm(n = N, mu = c(0,0,0), Sigma = matrix(c(sig2y0,rho,t0,rho,sig2y1,t1,t0,t1,sig2x),ncol = 3, byrow = T))
+x2 <- Pi1*x1 + Pi2*z + errs[,3]
+y0Star <- G1*x1 + G2*z + errs[,2]
+lny1Star <- B1*x1 + B2*x2 + errs[,1]
+y1 <- as.numeric(y0Star>0)*exp(lny1Star)
+
+model <- function(parm, data) {
+  sigx <- exp(parm[1]); sigy1 <- exp(parm[2]); t1 <- parm[3]; t0 <- parm[4]
+  b1 <- parm[5]; b2 <- parm[6]; g1 <- parm[7]; g2 <- parm[8]; p1<-parm[9];p2<-parm[10];rho <- parm[11]
+
+  log_lik <- loglik_lgnorm_rho(parm)
+
+  log_prior <- sum(dnorm(c(b1,b2,g1,g2,p1,p2,t1,t0,rho),0,100,log = T))+dlnorm(sigy1, 0, 4, log = T)+dlnorm(sigx, 0, 4, log = T)
+
+  post_lik <- log_lik + log_prior
+  print(post_lik)
+
+  # This list is returned and has to follow a the format specified by
+  # LaplacesDemon.
+  list(LP = post_lik, Dev = -2 * log_lik, Monitor = c(post_lik, sigx,sigy1), yhat = NA,parm = parm)
+}
+
+# Running the model -- infinite eigen(sig_err values)
+data_list <- list(N = length(y1), y = y1,x = x2, x1=x1,z = z , mon.names = c("post_lik", "sigx","sigy1"),
+                  parm.names = c("log.sigx","log.sigy","tau1","tau0","B1","B2","G1","G2","Pi1","Pi2","rho"))
+mcmc_samples <- LaplacesDemon(Model = model, Data = data_list, Iterations = 50000,
+                              Algorithm = "HARM", Thinning = 1,
+                              Initial.Values = c(1,1,0,0,B1,B2,G1,G2,Pi1,Pi2,rho))
+
+plot(mcmc_samples, BurnIn = 10000, data_list)
+
+
+# Running the model
+data_list <- list(N = length(y1), y1 = y1, x2 = x2, z = z, mon.names = c("post_lik", "sig_v","sig_u"),
+                  parm.names = c("log.sigv","log.sigu", "t1", "t0","b1","b2","g1","g2", "p1", "p2"))
+mcmc_samples <- LaplacesDemon(Model = model, Data = data_list, Iterations = 30000,
+                              Algorithm = "HARM", Thinning = 1)
+
+plot(mcmc_samples, BurnIn = 10000, data_list)
 
 # ##### this is from: https://nicercode.github.io/guides/mcmc/ ####
 # just to get mean

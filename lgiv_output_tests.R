@@ -138,7 +138,11 @@ out = hurdle.IV.MCMC(y~exog1 + endog,
                 endog = endog,
                 exog = exog1,
                 data = dat,
-                k = 100)
+                options = list(cholesky = T
+                               , maxit = 5000
+                               , trace = 0
+                               , method = "BFGS"),
+                k = 1000)
 
 nms = c('rho','sig2y1','t0','t1','sig2x2','beta1','beta2','beta3','gamma1','gamma2','gamma3','pi1','pi2','pi3')
 true = c(r,sdy1,t1,t1,sdx2,bs,gs,pis)
