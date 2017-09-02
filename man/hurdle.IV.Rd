@@ -41,4 +41,3 @@ Run a hurdle IV regression, either lognormal IV or cragg IV.
 You should specify the model you want to fit. Currently this does not have
 a nice summary function for the output.
 }
-

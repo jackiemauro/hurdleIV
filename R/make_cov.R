@@ -99,8 +99,6 @@ make.covTrans <- function(a,num_endog,gamma,beta,option = "mat",noname = F){
   A[2,3:(2+num_endog)] <- bet2
   A = matrix(as.double(A),ncol = dim(A)[2])
 
-  Sig = A%*%Sig_err%*%t(A)
-  Sig = t(chol(Sig))%*%chol(Sig)
 #   Sig = matrix(as.double(Sig),ncol = dim(Sig)[2])
 #   Sig[upper.tri(Sig)]<-Sig[lower.tri(Sig)]
 
@@ -115,21 +113,26 @@ make.covTrans <- function(a,num_endog,gamma,beta,option = "mat",noname = F){
     print(min(eigen(Sig_err)$values))
   }
 
-  if(min(eigen(Sig)$values)<0){
-    print("In covariance transform function, A * Sigma * AT not PSD")
-#     print(Sig)
-#     print(Sig_err)
-#     print(A)
-#     print(min(eigen(Sig)$values))
-  }
+  Sig = A%*%Sig_err%*%t(A)
 
-  if(!all(Sig==t(Sig)) ){
-    print("In covariance transform function, A * Sigma * AT not symmetric")
-    print(Sig)
-    print(Sig_err)
-    print(A)
-    print(A%*%Sig_err%*%t(A))
-  }
+  # if(min(eigen(Sig)$values)<0){
+  #   print("In covariance transform function, A * Sigma * AT not PSD")
+  #   print(Sig)
+  #   print(Sig_err)
+  #   print(A)
+  #   print(min(eigen(Sig)$values))
+  # }
+
+  # if(!all(Sig==t(Sig)) ){
+  #   print("In covariance transform function, A * Sigma * AT not symmetric")
+  #   print(Sig)
+  #   print(Sig_err)
+  #   print(A)
+  #   print(A%*%Sig_err%*%t(A))
+  # }
+
+  Sig = t(chol(Sig))%*%chol(Sig)
+
 
   return(Sig)
   }

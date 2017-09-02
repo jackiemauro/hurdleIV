@@ -1,6 +1,7 @@
 # another attempt at mcmc
 
-#### laplace demon http://www.sumsar.net/blog/2013/06/three-ways-to-run-bayesian-models-in-r/####
+#### laplace demon ####
+#http://www.sumsar.net/blog/2013/06/three-ways-to-run-bayesian-models-in-r/
 rm(list = ls())
 library(LaplacesDemon)
 
@@ -24,6 +25,8 @@ mcmc_samples <- LaplacesDemon(Model = model, Data = data_list, Iterations = 3000
                               Algorithm = "HARM", Thinning = 1)
 
 plot(mcmc_samples, BurnIn = 10000, data_list)
+mcmc_samples$Summary1['mu','Mean'];mcmc_samples$Summary1['mu','SD']
+mcmc_samples$Summary1['sigma','Mean'];mcmc_samples$Summary1['sigma','SD']
 
 # basic IV
 rm(list = ls())
@@ -78,6 +81,14 @@ mcmc_samples <- LaplacesDemon(Model = model, Data = data_list, Iterations = 5000
 
 plot(mcmc_samples, BurnIn = 10000, data_list)
 
+parameters = c('B1','B2','Pi1','Pi2','tau0','sigx','sigy1')
+true = c(B1,B2,Pi1,Pi2,t0,sig2x,sig2y1)
+names(true)<-parameters
+for(par in parameters){
+  print(true[par] )
+  print(mcmc_samples$Summary1[par,'Mean'])
+  print(mcmc_samples$Summary1[par,'SD'])
+}
 
 # lognormal IV
 rm(list = ls())
@@ -107,23 +118,46 @@ model <- function(parm, data) {
   list(LP = post_lik, Dev = -2 * log_lik, Monitor = c(post_lik, sigx,sigy1), yhat = NA,parm = parm)
 }
 
-# Running the model -- infinite eigen(sig_err values)
+# Running the model
 data_list <- list(N = length(y1), y = y1,x = x2, x1=x1,z = z , mon.names = c("post_lik", "sigx","sigy1"),
                   parm.names = c("log.sigx","log.sigy","tau1","tau0","B1","B2","G1","G2","Pi1","Pi2","rho"))
-mcmc_samples <- LaplacesDemon(Model = model, Data = data_list, Iterations = 50000,
+mcmc_samples <- LaplacesDemon(Model = model, Data = data_list, Iterations = 100000,
                               Algorithm = "HARM", Thinning = 1,
                               Initial.Values = c(1,1,0,0,B1,B2,G1,G2,Pi1,Pi2,rho))
 
 plot(mcmc_samples, BurnIn = 10000, data_list)
+True.vals <- c(sig2x,sig2y1,t1,t0,B1,B2,G1,G2,Pi1,Pi2,rho)
+names <- c('sigx','sigy1','tau1','tau0','B1','B2','G1','G2','Pi1','Pi2','rho')
+Compare <- cbind(mcmc_samples$Summary2[names,c("Mean","SD")],True.vals)
 
+# run it within the hurdleIVMCMC code
+rm(list = ls())
 
-# Running the model
-data_list <- list(N = length(y1), y1 = y1, x2 = x2, z = z, mon.names = c("post_lik", "sig_v","sig_u"),
-                  parm.names = c("log.sigv","log.sigu", "t1", "t0","b1","b2","g1","g2", "p1", "p2"))
-mcmc_samples <- LaplacesDemon(Model = model, Data = data_list, Iterations = 30000,
-                              Algorithm = "HARM", Thinning = 1)
+z <- rnorm(N,2,1); x1 <- rnorm(N,-1,3)
+sig2y1<-2; sig2y0<-1; rho <- .1; t0<-.2; t1 <- .3; sig2x<-3
+Pi1<-1; Pi2<-3; B1<-2; B2<-1;G1<- -1; G2 <- 2
 
-plot(mcmc_samples, BurnIn = 10000, data_list)
+bs  = c(0,B1,B2); gs = c(0,G1,G2); pis = c(0, Pi1, Pi2)
+sig2y1<-2; sig2y0<-1; rho <- .1; t0<-.2; t1 <- .3; sig2x<-3
+inst_mean = 2; inst_sd = 1; exog_mean = -1; exog_sd = 3
+
+nms = c('rho','sigy1','tau0','tau1','sigx','beta1','beta2','beta3','gamma1','gamma2','gamma3','pi1','pi2','pi3')
+true.vals = c(rho,sig2y1,t0,t1,sig2x,bs,gs,pis)
+
+dat = hurdle.IV.sim(pi = pis, gamma = gs, beta = bs,
+                    exog_mean = exog_mean, exog_sd = exog_sd,
+                    z_mean = inst_mean, z_sd = inst_sd,
+                    endog_sd = sqrt(sig2x), y_sd = sqrt(sig2y1),
+                    rho = rho, tau0 = t0, tau1 = t1, n = 10000)
+out = hurdle.IV.MCMC(y~exog1 + endog,
+                inst = inst1,
+                endog = endog,
+                exog = exog1,
+                data = dat,
+                k = 50000)
+
+Compare <- cbind(out$Summary2[nms,c("Mean","SD")],true.vals)
+
 
 # ##### this is from: https://nicercode.github.io/guides/mcmc/ ####
 # just to get mean

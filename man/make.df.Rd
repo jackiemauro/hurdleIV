@@ -23,4 +23,3 @@ returns a dataset of normally distributed variables
 Generates a dataset with normally distributed variables.
 You can specify the mean and variance of each column.
 }
-

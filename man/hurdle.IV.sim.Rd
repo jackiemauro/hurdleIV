@@ -8,7 +8,7 @@ hurdle.IV.sim(formula = F, pi = c(1, -1, 3), gamma = c(-0.2, 0.8, 0.07),
   beta = c(0.05, 0.06, 0.02), endog_reg = list(), exog_mean = 1,
   exog_sd = 1, z_mean = 3, z_sd = 1, endog_sd = 5, y_sd = 2,
   rho = 0.2, tau0 = 0.3, tau1 = 0.1, n = 10000, options = list(silent
-  = F, cragg_errors = 1), type = "lognormal")
+  = F, cragg_errors = 4), type = "lognormal")
 }
 \arguments{
 \item{formula}{For now, must be False. In the future, will allow you to leave
@@ -55,7 +55,9 @@ first stage regression. Defaults to 0.1.}
 \item{n}{the number of observations. Defaults to 10,000.}
 
 \item{options}{Options are: silent = F (will print histograms and percent censored),
-cragg_errors = {1,2} cragg error type 1 resamples entire vector of errors.
+cragg_errors = {1,2,3,4} cragg error type 4 will generate x2 and y0 first, then
+generate y1 from a conditional distribution on the first two and on itself being
+positive.
 See documentation for cragg_errs for more detail.}
 
 \item{type}{defaults to lognormal. Enter "cragg" for cragg model.}
@@ -68,4 +70,3 @@ Simulates a dataset from either Cragg or Lognormal distributions.
 Allows you to specify the data generating process, though it still
 can't handle more than one endogenous regression
 }
-

@@ -2,7 +2,7 @@
 % Please edit documentation in R/cragg_errors2.R
 \name{cragg_errs2}
 \alias{cragg_errs2}
-\title{Resample only linear errors for truncated normal errors}
+\title{Resample for truncated normal errors}
 \usage{
 cragg_errs2(cov, pi, x1, gamma, beta, n, z)
 }
@@ -32,7 +32,6 @@ The truncated multivariate normal errors can be generated
 in one of two ways. Either we sample the first stage and probit errors
 first and then resample the linear regression's errors until we have
 positive values, or we resample the vector of all three errors until
-the linear value is positive. This is the first method, use cragg_errors
-for the second, which is more intuitive.
+the linear value is positive. This is the second method, use cragg_errs1
+for the second, which is less intuitive.
 }
-

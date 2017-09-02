@@ -17,10 +17,7 @@ dataset.
 }
 \description{
 Returns the likelihood for a Cragg IV. Requires certain
-parameters to be attached/in the environment. Can't figure out how to
-just pass them to the function without the function later trying to
-optimize for them. This should essentially always be used in a wrapper
-for that reason. Note that this uses the first method of truncation for
-the errors, described in cragg_errs.
+parameters to be attached/in the environment. Note that this uses the
+MG method for the errors, described in cragg_errs. This is following
+the method worked out with Max.
 }
-

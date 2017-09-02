@@ -26,4 +26,3 @@ returns a covariancne matrix
 Specify elements of the covariance matrix and it organizes
 them for you
 }
-

@@ -24,4 +24,3 @@ and the covariance matrix
 The maximum likelihood procedure needs a place to start.
 This runs traditional IV probit/linear regressions to get starting points.
 }
-

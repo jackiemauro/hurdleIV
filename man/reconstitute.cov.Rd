@@ -14,13 +14,13 @@ reconstitute.cov(vals, num, chol = myChol)
 \item{chol}{True/False. If true, will re-transform to original}
 }
 \value{
-The vector renamed according to what it needs to be to work in the 
+The vector renamed according to what it needs to be to work in the
 likelihood functions
 }
 \description{
-This takes a vector and reconstitutes it into the matrix
-you want in the end. The first term is always 1 under the assumptions
-of the IV hurdle models. If you did a cholesky decomposition it will 
-un-do that tranformation for you.
+This takes a vector of upper diagonal terms and
+reconstitutes it into the matrix you want in the end. The first
+term is always 1 under the assumptions of the IV hurdle models.
+If you did a cholesky decomposition it will un-do that tranformation
+for you.
 }
-

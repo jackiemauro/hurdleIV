@@ -22,4 +22,3 @@ just pass them to the function without the function later trying to
 optimize for them. This should essentially always be used in a wrapper
 for that reason.
 }
-

@@ -7,6 +7,7 @@ hurdle.IV.MCMC<-function(formula,
                     start_val = list(),
                     type = "lognormal",
                     k = 1000,
+                    mcmc = myMCMC,
                     options = list(cholesky = T
                                    , maxit = 5000
                                    , trace = 0
@@ -172,7 +173,7 @@ hurdle.IV.MCMC<-function(formula,
   cov_in = cov_start[upper.tri(cov_start, diag = T)][-1]
   start_vec = c(cov_in, start_val$beta, start_val$gamma, unlist(start_val$pi))
 
-  out = myMCMC(start_vec, k) #bayesian from true
+  out = mcmc(start_vec, dat = mf, k, pars = pars)
   detach(pars);detach(mf)
 
   # name_pars = name.pieces(out$par)

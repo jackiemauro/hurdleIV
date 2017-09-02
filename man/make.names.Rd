@@ -17,4 +17,3 @@ returns a vector of names of the form x1, x2, .... xN
 \description{
 Names the columns of your dataset to help out
 }
-

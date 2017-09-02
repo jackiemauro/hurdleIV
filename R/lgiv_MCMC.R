@@ -1,4 +1,46 @@
-myMCMC<-function(params,k){
+myMCMC<-function(params,dat,k,pars){
+  model <- function(parm, data) {
+    log_lik<-loglik_lgiv(parm)
+
+    pieces = name.pieces(parm)
+
+    covs = pieces$cov_start
+    sigy1 = exp(covs[2])
+    sigx = exp(tail(covs,1))
+    log_prior <- sum(dnorm(c(pieces$pi[[1]], pieces$gamma, pieces$beta, covs),0,100,log = T))+dlnorm(sigy1, 0, 4, log = T)+dlnorm(sigx, 0, 4, log = T)
+
+    post_lik <- log_lik + log_prior
+
+    # This list is returned and has to follow a the format specified by
+    # LaplacesDemon.
+    list(LP = post_lik, Dev = -2 * log_lik, Monitor = c(post_lik, sigx,sigy1), yhat = NA,parm = parm)
+  }
+
+  pieces = name.pieces(params)
+  betnames = sapply(c(1:length(pieces$beta)),function(x) paste('beta',x,sep = ""))
+  gamnames = sapply(c(1:length(pieces$gamma)),function(x) paste('gamma',x,sep = ""))
+  pinames = sapply(c(1:length(pieces$pi[[1]])),function(x) paste('pi',x,sep = ""))
+  names = c('rho','logsigy1','tau0','tau1','logsigx',betnames,gamnames,pinames)
+
+  # Running the model
+  data_list <- list(N = length(dat$outcome), y = dat$outcome,x = dat$endog, z = dat$inst1,
+                    mon.names = c("post_lik", "sigx","sigy1"),
+                    parm.names = names)
+  mcmc_samples <- LaplacesDemon(Model = model, Data = data_list, Iterations = k,
+                                Algorithm = "HARM", Thinning = 1,Initial.Values = params)
+
+  return(mcmc_samples)
+}
+
+
+
+
+
+
+
+
+myMCMC2<-function(params,dat,k,pars){
+  #uses own MCMC
   likelihood<-loglik_lgiv
 
   prior <- function(params){

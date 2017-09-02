@@ -7,7 +7,7 @@
 make.covTrans(a, num_endog, gamma, beta, option = "mat", noname = F)
 }
 \arguments{
-\item{a}{can be a matrix or vector of what should be included in 
+\item{a}{can be a matrix or vector of what should be included in
 the covariance matrix}
 
 \item{num_endog}{the number of endogenous regressors}
@@ -26,7 +26,6 @@ returns the covariance matrix
 }
 \description{
 In these regressions, we need to transform the covariance
-matrix using the coefficients in our regressions. This function produces that 
+matrix using the coefficients in our regressions. This function produces that
 covariance matrix.
 }
-
