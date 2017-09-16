@@ -189,12 +189,12 @@ hurdle.IV.MCMC<-function(formula,
   summary = out$Summary2
   summary['logsigy1',] <- summary['sigy1',]
   summary['logsigx',] <- summary['sigx',]
-  name_pars = name.pieces(out$Summary2[,'Mean'])
+  name_pars = name.pieces(summary[,'Mean'])
   # name_pars$cov = reconstitute.cov(vals=name_pars$cov_start, num=num_endog, chol=myChol)
   # name_pars$cov_start <-NULL
   detach(mf)
   detach(pars)
-  sds = out$Summary2[,'SD']
+  sds = summary[,'SD']
   #
   # if(min(eigen(out$hessian)$value)*max(eigen(out$hessian)$value)<0){
   #   print("bad hessian")
