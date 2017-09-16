@@ -39,8 +39,15 @@ hurdle.IV.MCMC<-function(formula,
   endog_names = rename.input(substitute(endog))
   names(endog_mat)<- endog_names
 
-  exog_mat = as.data.frame(matrix(exog, nrow = dim(data)[1], byrow = F))
-  exog_names = rename.input(substitute(exog))
+  if(is.null(exog)){
+    # if you want to run with no covariates
+    exog_mat = data.frame(none = rep(0,dim(data)[1]))
+    exog_names = NULL
+  }
+  else{
+    exog_mat = as.data.frame(matrix(exog, nrow = dim(data)[1], byrow = F))
+    exog_names = rename.input(substitute(exog))
+  }
   names(exog_mat)<- exog_names
 
   outcome = eval(parse(text=paste("data$",formula[[2]],sep = "")))
@@ -84,9 +91,12 @@ hurdle.IV.MCMC<-function(formula,
   ##### make endog reg #####
   if(length(endog_reg) == 0){
     a = names(endog_mat)[1]
-    b = paste(names(exog_mat),collapse = "+")
     d = paste(names(inst_mat), collapse = "+")
-    endog_reg = list(as.formula(paste(a,"~",b,"+",d)))
+    if(is.null(exog)){endog_reg = list(as.formula(paste(a,"~",d)))}
+    else{
+      b = paste(names(exog_mat),collapse = "+")
+      endog_reg = list(as.formula(paste(a,"~",b,"+",d)))
+    }
   }
   else{
     if(length(endog_reg)!=dim(endog_mat)[2]){
@@ -101,7 +111,8 @@ hurdle.IV.MCMC<-function(formula,
   ER_inst = lapply(ER_colnames, function(x) inst_mat[names(inst_mat) %in% x])
 
   ### drop NA's
-  mf = cbind(outcome, exog_mat, inst_mat, endog_mat)
+  if(is.null(exog)){mf = cbind(outcome, inst_mat, endog_mat)}
+  else{mf = cbind(outcome, exog_mat, inst_mat, endog_mat)}
   mf = mf[complete.cases(mf),] #drop NA's
   detach(data)
   attach(mf)

@@ -17,10 +17,10 @@ myMCMC<-function(params,dat,k,pars){
   }
 
   pieces = name.pieces(params)
-  betnames = sapply(c(1:length(pieces$beta)),function(x) paste('beta',x,sep = ""))
-  gamnames = sapply(c(1:length(pieces$gamma)),function(x) paste('gamma',x,sep = ""))
-  pinames = sapply(c(1:length(pieces$pi[[1]])),function(x) paste('pi',x,sep = ""))
-  names = c('rho','logsigy1','tau0','tau1','logsigx',betnames,gamnames,pinames)
+  # betnames = sapply(c(1:length(pieces$beta)),function(x) paste('beta',x,sep = ""))
+  # gamnames = sapply(c(1:length(pieces$gamma)),function(x) paste('gamma',x,sep = ""))
+  # pinames = sapply(c(1:length(pieces$pi[[1]])),function(x) paste('pi',x,sep = ""))
+  names = c('rho','logsigy1','tau0','tau1','logsigx',names(pieces$beta),names(pieces$gamma),names(pieces$pi[[1]]))
 
   # Running the model
   data_list <- list(N = length(dat$outcome), y = dat$outcome,x = dat$endog, z = dat$inst1,

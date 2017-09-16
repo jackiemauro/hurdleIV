@@ -8,6 +8,14 @@ out = hurdle.IV(y~exog1 + endog,
                 exog = exog1,
                 data = dat)
 
+# no covariates
+dat = hurdle.IV.sim()
+out = hurdle.IV(y~endog,
+                inst = inst1,
+                endog = endog,
+                exog = NULL,
+                data = dat)
+
 # small sample
 dat = hurdle.IV.sim(n=50)
 out = hurdle.IV(y~exog1 + endog,
