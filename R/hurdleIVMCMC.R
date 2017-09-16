@@ -185,20 +185,20 @@ hurdle.IV.MCMC<-function(formula,
   start_vec = c(cov_in, start_val$beta, start_val$gamma, unlist(start_val$pi))
 
   out = mcmc(start_vec, dat = mf, k, pars = pars)
-  detach(pars);detach(mf)
 
-  # name_pars = name.pieces(out$par)
-  # name_pars$cov = reconstitute.cov(vals=name_pars$cov_start
-  #                                  ,num=num_endog
-  #                                  ,chol=myChol)
+  summary = out$Summary2
+  summary['logsigy1',] <- summary['sigy1',]
+  summary['logsigx',] <- summary['sigx',]
+  name_pars = name.pieces(out$Summary2[,'Mean'])
+  # name_pars$cov = reconstitute.cov(vals=name_pars$cov_start, num=num_endog, chol=myChol)
   # name_pars$cov_start <-NULL
-  # detach(mf)
-  # detach(pars)
-  # sds = 1/(diag(out$hessian))
+  detach(mf)
+  detach(pars)
+  sds = out$Summary2[,'SD']
   #
   # if(min(eigen(out$hessian)$value)*max(eigen(out$hessian)$value)<0){
   #   print("bad hessian")
   # }
-  return(out)
+  return(list(parameters = name_pars, sd = sds))
 }
 

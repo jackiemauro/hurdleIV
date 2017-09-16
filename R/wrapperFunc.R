@@ -165,10 +165,10 @@ hurdle.IV<-function(formula,
       stop("Error: tau0, tau1 and number of pi coordinates must equal number of endogenous variables")
     }
     if(is.null(names(start_val$gammas))){
-      names(start_val$gamma)<-c("Intercept", exog_names, endog_names)
+      names(start_val$gamma)<-c("(Intercept)", exog_names, endog_names)
     }
     if(is.null(names(start_val$beta))){
-      names(start_val$beta)<-c("Intercept", exog_names, endog_names)
+      names(start_val$beta)<-c("(Intercept)", exog_names, endog_names)
     }
   }
 
