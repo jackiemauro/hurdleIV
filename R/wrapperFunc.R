@@ -62,7 +62,7 @@ hurdle.IV<-function(formula,
   endog_names = rename.input(substitute(endog))
   names(endog_mat)<- endog_names
 
-  if(exog = NULL){
+  if(exog == NULL){
     # if you want to run with no covariates
     exog_mat = rep(0,dim(data)[1])
     names(exog_mat)<- 'none'
