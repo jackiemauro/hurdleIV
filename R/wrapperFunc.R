@@ -62,9 +62,17 @@ hurdle.IV<-function(formula,
   endog_names = rename.input(substitute(endog))
   names(endog_mat)<- endog_names
 
-  exog_mat = as.data.frame(matrix(exog, nrow = dim(data)[1], byrow = F))
-  exog_names = rename.input(substitute(exog))
-  names(exog_mat)<- exog_names
+  if(exog = NULL){
+    # if you want to run with no covariates
+    exog_mat = rep(0,dim(data)[1])
+    names(exog_mat)<- 'none'
+  }
+  else{
+    exog_mat = as.data.frame(matrix(exog, nrow = dim(data)[1], byrow = F))
+    exog_names = rename.input(substitute(exog))
+    names(exog_mat)<- exog_names
+  }
+
 
   outcome = eval(parse(text=paste("data$",formula[[2]],sep = "")))
   y_mat = model.matrix(formula)
