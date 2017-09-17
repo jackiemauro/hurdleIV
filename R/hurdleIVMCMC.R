@@ -191,7 +191,7 @@ hurdle.IV.MCMC<-function(formula,
   summary['logsigx',] <- summary['sigx',]
   name_pars = name.pieces(summary[,'Mean'])
   name_pars$cov = reconstitute.cov(vals=name_pars$cov_start, num=num_endog, chol=myChol)
-  # name_pars$cov_start <-NULL
+  name_pars$cov_start <-NULL
   detach(mf)
   detach(pars)
   sds = summary[,'SD']
