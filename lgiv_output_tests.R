@@ -157,3 +157,22 @@ true = c(r,sdy1,t0,t1,sdx2,bs,gs,pis)
 mns = apply(out,2,mean);sds = apply(out,2,sd)
 View(cbind(true,mns))
 for(i in 1:14){hist(out[,i],main = nms[i]);abline(v = true[i],col = 'red');abline(v = mns[i],col = 'green')}
+
+
+#### MCMC ####
+dat = hurdle.IV.sim()
+out = hurdle.IV.MCMC(y~exog1 + endog,
+                inst = inst1,
+                endog = endog,
+                exog = exog1,
+                k = 1000,
+                data = dat)
+
+out = hurdle.IV.MCMC(y~exog1 + endog,
+                     inst = inst1,
+                     endog = endog,
+                     exog = exog1,
+                     start_val = list(beta = c(1,2,3),gamma = c(1,2,3),pi= list(c(1,1,1)),
+                                      endog_sd = 1, y_sd = 1, tau0 = 0, tau1 = 0, rho = 0),
+                     k = 1000,
+                     data = dat)

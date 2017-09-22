@@ -8,6 +8,7 @@ hurdle.IV.MCMC<-function(formula,
                     type = "lognormal",
                     k = 1000,
                     mcmc = myMCMC,
+                    summarize = T,
                     options = list(cholesky = T
                                    , maxit = 5000
                                    , trace = 0
@@ -186,19 +187,25 @@ hurdle.IV.MCMC<-function(formula,
 
   out = mcmc(start_vec, dat = mf, k, pars = pars)
 
-  summary = out$Summary2
-  summary['logsigy1',] <- summary['sigy1',]
-  summary['logsigx',] <- summary['sigx',]
-  name_pars = name.pieces(summary[,'Mean'])
-  name_pars$cov = reconstitute.cov(vals=name_pars$cov_start, num=num_endog, chol=myChol)
-  name_pars$cov_start <-NULL
-  detach(mf)
-  detach(pars)
-  sds = summary[,'SD']
-  #
-  # if(min(eigen(out$hessian)$value)*max(eigen(out$hessian)$value)<0){
-  #   print("bad hessian")
-  # }
-  return(list(parameters = name_pars, sd = sds))
+
+  if(all(is.na(out$Summary2))){summary = out$Summary1; print ('try more iterations for thinned summary')}
+  else{summary = out$Summary2}
+  if(summary == F){return(summary)}
+  else{
+    summary['logsigy1',] <- summary['sigy1',]
+    summary['logsigx',] <- summary['sigx',]
+    name_pars = name.pieces(summary[,'Mean'])
+    name_pars$cov = reconstitute.cov(vals=name_pars$cov_start, num=num_endog, chol=myChol)
+    name_pars$cov_start <-NULL
+    detach(mf)
+    detach(pars)
+    sds = summary[,'SD']
+    return(list(parameters = name_pars, sd = sds))
+  }
 }
+
+
+
+
+
 
