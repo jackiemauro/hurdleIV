@@ -12,7 +12,7 @@ hurdle.IV.MCMC<-function(formula,
                          options = list(cholesky = T
                                         , maxit = 5000
                                         , trace = 0
-                                        , method = "BFGS")
+                                        , method = "BFGS"),...
 ){
   
   # helper fn
@@ -185,7 +185,7 @@ hurdle.IV.MCMC<-function(formula,
   cov_in = cov_start[upper.tri(cov_start, diag = T)][-1]
   start_vec = c(cov_in, start_val$beta, start_val$gamma, unlist(start_val$pi))
   
-  out = mcmc(start_vec, dat = mf, k, pars = pars)
+  out = mcmc(start_vec, dat = mf, k, pars = pars,...)
   
   
   if(all(is.na(out$Summary2))){summary = out$Summary1; print ('try more iterations for thinned summary')}
