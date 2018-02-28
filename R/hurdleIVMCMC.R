@@ -1,20 +1,20 @@
 hurdle.IV.MCMC<-function(formula,
-                    inst,
-                    endog,
-                    exog,
-                    data,
-                    endog_reg = list(),
-                    start_val = list(),
-                    type = "lognormal",
-                    k = 1000,
-                    mcmc = myMCMC,
-                    summarize = T,
-                    options = list(cholesky = T
-                                   , maxit = 5000
-                                   , trace = 0
-                                   , method = "BFGS")
+                         inst,
+                         endog,
+                         exog,
+                         data,
+                         endog_reg = list(),
+                         start_val = list(),
+                         type = "lognormal",
+                         k = 1000,
+                         mcmc = myMCMC,
+                         summarize = T,
+                         options = list(cholesky = T
+                                        , maxit = 5000
+                                        , trace = 0
+                                        , method = "BFGS")
 ){
-
+  
   # helper fn
   rename.input <- function(input){
     if(class(input)=="name"){
@@ -28,18 +28,18 @@ hurdle.IV.MCMC<-function(formula,
       return(name)
     }
   }
-
+  
   ###### format your data, grouping variable types #####
   data = data[complete.cases(data),]
   attach(data)
   inst_mat = as.data.frame(matrix(inst,nrow = dim(data)[1], byrow = F))
   inst_names = rename.input(substitute(inst))
   names(inst_mat)<-inst_names
-
+  
   endog_mat = as.data.frame(matrix(endog, nrow = dim(data)[1], byrow = F))
   endog_names = rename.input(substitute(endog))
   names(endog_mat)<- endog_names
-
+  
   if(is.null(exog)){
     # if you want to run with no covariates
     exog_mat = data.frame(none = rep(0,dim(data)[1]))
@@ -50,7 +50,7 @@ hurdle.IV.MCMC<-function(formula,
     exog_names = rename.input(substitute(exog))
   }
   names(exog_mat)<- exog_names
-
+  
   outcome = eval(parse(text=paste("data$",formula[[2]],sep = "")))
   y_mat = model.matrix(formula)
   y_colnames = colnames(y_mat)
@@ -74,21 +74,21 @@ hurdle.IV.MCMC<-function(formula,
     detach(data)
     stop("Error: endogenous variables must be included in main regression")
   }
-
+  
   # check no more endogenous variables than instruments
   if(length(inst)<length(endog)){
     detach(data)
     stop("Error: More endogenous variables than instruments")
   }
-
+  
   # if not specified, replace endog_reg with formula that has all exog's, all inst's
   if(!is.list(endog_reg)){
     stop("Error: endog_reg must be a list (can be empty)")
   }
-
-
-
-
+  
+  
+  
+  
   ##### make endog reg #####
   if(length(endog_reg) == 0){
     a = names(endog_mat)[1]
@@ -105,19 +105,19 @@ hurdle.IV.MCMC<-function(formula,
       stop("Error: Need one regression for each endogenous variable")
     }
   }
-
+  
   ER_mat = lapply(endog_reg, function(x) model.matrix(x))
   ER_colnames = lapply(ER_mat, function(x) colnames(x))
   ER_exog = lapply(ER_colnames, function(x) exog_mat[names(exog_mat) %in% x])
   ER_inst = lapply(ER_colnames, function(x) inst_mat[names(inst_mat) %in% x])
-
+  
   ### drop NA's
   if(is.null(exog)){mf = cbind(outcome, inst_mat, endog_mat)}
   else{mf = cbind(outcome, exog_mat, inst_mat, endog_mat)}
   mf = mf[complete.cases(mf),] #drop NA's
   detach(data)
   attach(mf)
-
+  
   ############# get start values #######
   # if start values aren't specified, get start values
   if(length(start_val) == 0){
@@ -126,7 +126,7 @@ hurdle.IV.MCMC<-function(formula,
                           , data = mf
                           , type = type)
   }
-
+  
   else{
     if(class(start_val) != "list"){
       detach(mf)
@@ -154,7 +154,7 @@ hurdle.IV.MCMC<-function(formula,
       #       names(start_val$beta)<-names_bet
     }
   }
-
+  
   # start cov values should be cholesky-fied if that option is true
   cov_start = make.cov(rho=start_val$rho
                        ,tau0=start_val$tau0
@@ -164,8 +164,8 @@ hurdle.IV.MCMC<-function(formula,
   if(options$cholesky == T){
     cov_start = chol(cov_start)
   }
-
-
+  
+  
   ########## run optimizer #############
   # save info about parameters and model matrices
   pars = list(len_cov = length(which(upper.tri(cov_start, diag = T)))-1
@@ -181,13 +181,13 @@ hurdle.IV.MCMC<-function(formula,
               ,exog_names = exog_names
               ,endog_names = endog_names)
   attach(pars)
-
+  
   cov_in = cov_start[upper.tri(cov_start, diag = T)][-1]
   start_vec = c(cov_in, start_val$beta, start_val$gamma, unlist(start_val$pi))
-
+  
   out = mcmc(start_vec, dat = mf, k, pars = pars)
-
-
+  
+  
   if(all(is.na(out$Summary2))){summary = out$Summary1; print ('try more iterations for thinned summary')}
   else{summary = out$Summary2}
   if(summary == F){return(summary)}
@@ -200,12 +200,6 @@ hurdle.IV.MCMC<-function(formula,
     detach(mf)
     detach(pars)
     sds = summary[,'SD']
-    return(list(parameters = name_pars, sd = sds))
+    return(list(parameters = name_pars, sd = sds, full = out))
   }
 }
-
-
-
-
-
-
