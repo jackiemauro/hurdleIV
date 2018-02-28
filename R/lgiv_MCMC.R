@@ -1,4 +1,4 @@
-myMCMC<-function(params,dat,k,pars){
+myMCMC<-function(params,dat,k,pars,mcmcAlgo = "HARM", thin = 1){
   model <- function(parm, data) {
     log_lik<-loglik_lgiv(parm)
 
@@ -27,7 +27,7 @@ myMCMC<-function(params,dat,k,pars){
                     mon.names = c("post_lik", "sigx","sigy1"),
                     parm.names = names)
   mcmc_samples <- LaplacesDemon(Model = model, Data = data_list, Iterations = k,
-                                Algorithm = "HARM", Thinning = 1,Initial.Values = params)
+                                Algorithm = mcmcAlgo, Thinning = thin,Initial.Values = params)
 
   return(mcmc_samples)
 }
