@@ -85,11 +85,6 @@ make.covTrans <- function(a,num_endog,gamma,beta,option = "mat",noname = T){
 
 
   A = diag(2+num_endog)
-
-  print(paste('noname=',noname))
-  print(paste('gamma=',gamma))
-  print(paste('beta=',beta))
-  print(paste('num_endog=',num_endog))
   
   if(noname == T){
     gam2 = tail(gamma,num_endog)
@@ -99,7 +94,8 @@ make.covTrans <- function(a,num_endog,gamma,beta,option = "mat",noname = T){
     gam2 = gamma[names(gamma) %in% endog_names]
     bet2 = beta[names(beta) %in% endog_names]
   }
-  print(paste('bet2=',bet2))
+  if(is.null(bet2)){bet2 = tail(beta,num_endog); print('check names on start vec for beta')}
+  if(is.null(gam2)){gam2 = tail(gamma,num_endog); print('check names on start vec for gamma')}
 
   A[1,3:(2+num_endog)] <- gam2
   A[2,3:(2+num_endog)] <- bet2
@@ -137,7 +133,7 @@ make.covTrans <- function(a,num_endog,gamma,beta,option = "mat",noname = T){
   #   print(A%*%Sig_err%*%t(A))
   # }
 
-  Sig = t(chol(Sig))%*%chol(Sig)
+  # Sig = t(chol(Sig))%*%chol(Sig)
 
 
   return(Sig)
