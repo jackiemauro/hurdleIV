@@ -134,6 +134,8 @@ make.covTrans <- function(a,num_endog,gamma,beta,option = "mat",noname = T){
   # }
 
   # Sig = t(chol(Sig))%*%chol(Sig)
+  library(Matrix)
+  Sig = forceSymmetric(Sig)
 
 
   return(Sig)
