@@ -133,10 +133,7 @@ make.covTrans <- function(a,num_endog,gamma,beta,option = "mat",noname = T){
   #   print(A%*%Sig_err%*%t(A))
   # }
 
-  # Sig = t(chol(Sig))%*%chol(Sig)
-  library(Matrix)
-  Sig = forceSymmetric(Sig)
-
+  Sig[lower.tri(Sig)] = t(Sig)[lower.tri(Sig)]
 
   return(Sig)
   }
