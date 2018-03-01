@@ -17,7 +17,7 @@
 #' @return returns the covariance matrix
 
 
-make.covTrans <- function(a,num_endog,gamma,beta,option = "mat",noname = F){
+make.covTrans <- function(a,num_endog,gamma,beta,option = "mat",noname = T){
   #option "parameters": a = list(rho,tau0,tau1,y_sd,endog_sd)
   #option "mat": a is full matrix
   #option "vector": a is vector of all elements of matrix
